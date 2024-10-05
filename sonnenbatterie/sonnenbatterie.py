@@ -170,7 +170,8 @@ class sonnenbatterie:
         return self._get(SONNEN_API_PATH_SYSTEM_DATA)
 
     def get_status(self):
-        return self._get(SONNEN_API_PATH_STATUS)
+    #    return self._get(SONNEN_API_PATH_STATUS)
+        return self._battery.get_status()
 
     def get_battery(self):
         return self._get(SONNEN_API_PATH_BATTERY)
@@ -182,12 +183,14 @@ class sonnenbatterie:
         return self._get(SONNEN_API_PATH_CONFIGURATIONS)
 
     def get_configuration(self, name):
-        return self._get(SONNEN_API_PATH_CONFIGURATIONS+"/"+name).get(name)
+    #    return self._get(SONNEN_API_PATH_CONFIGURATIONS+"/"+name).get(name)
+        return self._battery.get_configuration().get(name)
 
 
     # these have special handling in some form, for example converting a mode as a number into a string
     def get_current_charge_level(self):
-        return self.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
+    #    return self.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
+        return self._battery.get_latest_details().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
 
     def get_operating_mode(self):
         return self.get_configuration(SONNEN_CONFIGURATION_OPERATING_MODE)
