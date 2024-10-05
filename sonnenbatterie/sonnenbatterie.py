@@ -71,14 +71,14 @@ class sonnenbatterie:
 
     def set_request_connect_timeout(self, timeout:int = 60):
         self._batteryRequestTimeout = (timeout, self._batteryRequestTimeout[TIMEOUT_REQUEST])
-        self._battery.set_request_timeouts(self._batteryRequestTimeout)
+        self._battery.set_request_connect_timeouts(self._batteryRequestTimeout)
 
     def get_request_connect_timeout(self) -> int:
         return self.request_timeouts[TIMEOUT_CONNECT]
 
     def set_request_read_timeout(self, timeout:int = 60):
         self.request_timeouts = (self.request_timeouts[TIMEOUT_CONNECT], timeout)
-        self._battery.set_request_timeouts(self._batteryRequestTimeout)
+        self._battery.set_request_connect_timeouts(self._batteryRequestTimeout)
 
     def get_request_read_timeout(self) -> int:
         return self._batteryRequestTimeout[TIMEOUT_REQUEST]
@@ -100,7 +100,6 @@ class sonnenbatterie:
     def _put(self, what, payload, isretry=False):
         if API_WRITE_TOKEN == 'X':
             raise ValueError('To use PUT, set API_WRITE_TOKEN in .env See env.example')
-
 
         # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
         url = self.baseurl+what
@@ -151,40 +150,45 @@ class sonnenbatterie:
 
     # more general purpose endpoints
     def set_configuration(self, name, value):
-        # All configurations names and values are hendled as strings, so force that
+        # All configurations names and values are handled as strings, so force that
         payload = {str(name): str(value)}
         return self._put(SONNEN_API_PATH_CONFIGURATIONS, payload)
 
     def get_powermeter(self):
     #    return self._get(SONNEN_API_PATH_POWER_METER)
-        return self._battery.fetch_powermeter()
+        return self._battery.get_powermeter()
 
     def get_batterysystem(self):
     #    return self._get(SONNEN_API_PATH_BATTERY_SYSTEM)
-        return self._battery.fetch_battery_status()
+        raise ValueError('System Data endpoint not defined for V2 API')
 
     def get_inverter(self):
-        return self._get(SONNEN_API_PATH_INVERTER)
+    #    return self._get(SONNEN_API_PATH_INVERTER)
+        return self._battery.get_inverter()
 
     def get_systemdata(self):
-        return self._get(SONNEN_API_PATH_SYSTEM_DATA)
+    #    return self._get(SONNEN_API_PATH_SYSTEM_DATA)
+        raise ValueError('System Data endpoint not defined for V2 API')
 
     def get_status(self):
     #    return self._get(SONNEN_API_PATH_STATUS)
         return self._battery.get_status()
 
     def get_battery(self):
-        return self._get(SONNEN_API_PATH_BATTERY)
+    #    return self._get(SONNEN_API_PATH_BATTERY)
+        return self._battery.get_battery()
 
     def get_latest_data(self):
-        return self._get(SONNEN_API_PATH_LATEST_DATA)
+    #    return self._get(SONNEN_API_PATH_LATEST_DATA)
+        return self._battery.get_latest_data()
 
     def get_configurations(self):
-        return self._get(SONNEN_API_PATH_CONFIGURATIONS)
+    #    return self._get(SONNEN_API_PATH_CONFIGURATIONS)
+        return self._battery.get_configurations()
 
     def get_configuration(self, name):
     #    return self._get(SONNEN_API_PATH_CONFIGURATIONS+"/"+name).get(name)
-        return self._battery.get_configuration().get(name)
+        return self._battery.get_configurations().get(name)
 
 
     # these have special handling in some form, for example converting a mode as a number into a string
