@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="sonnenbatterie_api_v2", # Replace with your own username
+    name="sonnenbatterie", # emulates weltmeyer package with same name
     version="0.1.0",
     author="Markus Biggus",
     author_email="author@example.com",

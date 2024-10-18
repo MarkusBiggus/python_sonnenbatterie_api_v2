@@ -1,19 +1,12 @@
-import os
+#import os
+#import hashlib
 import requests
-import hashlib
 import json
 # pylint: disable=unused-wildcard-import
 from .const import *
 # pylint: enable=unused-wildcard-import
 from .timeofuse import timeofuseschedule
 from sonnen_api_v2 import Sonnen
-from dotenv import load_dotenv
-
-load_dotenv()
-
-BATTERIE_HOST = os.getenv('BATTERIE_HOST','X')
-API_READ_TOKEN = os.getenv('API_READ_TOKEN','X')
-API_WRITE_TOKEN = os.getenv('API_WRITE_TOKEN','X')
 
 # indexes for _batteryRequestTimeout
 TIMEOUT_CONNECT=0
@@ -21,24 +14,26 @@ TIMEOUT_REQUEST=1
 
 
 class sonnenbatterie:
-    if BATTERIE_HOST == 'X' and API_READ_TOKEN == 'X':
-        raise ValueError('Set BATTERIE_HOST & API_READ_TOKEN or API_WRITE_TOKEN in .env See env.example')
 
-    def __init__(self,username,password,ipaddress):
-        self.username=username
-        self.password=password
-        self.ipaddress=ipaddress if BATTERIE_HOST == 'X' else BATTERIE_HOST
+    def __init__(self,username,token,ipaddress):
+#        self.username=username
+        self.token=token
+        self.ipaddress=ipaddress
         self.baseurl='http://'+self.ipaddress+'/api/'
         self.setpoint='v2/setpoint/'
         self._batteryLoginTimeout = DEFAULT_BATTERY_LOGIN_TIMEOUT
 #        self._batteryConnectTimeout = DEFAULT_CONNECT_TO_BATTERY_TIMEOUT
 #        self._batteryReadTimeout = DEFAULT_READ_FROM_BATTERY_TIMEOUT
 #        self._batteryRequestTimeout = (self._batteryConnectTimeout, self._batteryReadTimeout)
+        self._batteryRequestTimeout = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
+        self._battery = Sonnen(self.token, self.ipaddress)
+        self._battery.set_request_connect_timeouts(self._batteryRequestTimeout)
 
-        self._login()
+
+#        self._login()
 
 
-    def _login(self):
+#    def _login(self):
 #        password_sha512 = hashlib.sha512(self.password.encode('utf-8')).hexdigest()
 #        req_challenge=requests.get(self.baseurl+'challenge', timeout=self._batteryLoginTimeout)
 #        req_challenge.raise_for_status()
@@ -54,13 +49,6 @@ class sonnenbatterie:
 #        token=getsession.json()['authentication_token']
         #print(token)
 #        self.token=token
-        self.token = API_WRITE_TOKEN if API_WRITE_TOKEN != 'X' else API_READ_TOKEN
-
-        self._battery = Sonnen(self.token, self.ipaddress)
-        self._batteryRequestTimeout = (0,0)
-        self._battery.set_request_connect_timeout(DEFAULT_CONNECT_TO_BATTERY_TIMEOUT)
-        self._battery.set_request_read_timeout(DEFAULT_READ_FROM_BATTERY_TIMEOUT)
-#        self._battery.update()
 
     def set_login_timeout(self, timeout:int = 120):
         # not used by wrapper
@@ -89,7 +77,7 @@ class sonnenbatterie:
         response=requests.get(url,
             headers={'Auth-Token': self.token}, timeout=self._batteryRequestTimeout
         )
-        if not isretry and response.status_code==401:
+        if not isretry and response.status_code == 401:
             self._login()
             return self._get(what,True)
         if response.status_code != 200:
@@ -98,15 +86,12 @@ class sonnenbatterie:
         return response.json()
 
     def _put(self, what, payload, isretry=False):
-        if API_WRITE_TOKEN == 'X':
-            raise ValueError('To use PUT, set API_WRITE_TOKEN in .env See env.example')
-
         # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
         url = self.baseurl+what
         response=requests.put(url,
             headers={'Auth-Token': self.token,'Content-Type': 'application/json'} , json=payload, timeout=self._batteryRequestTimeout
         )
-        if not isretry and response.status_code==401:
+        if not isretry and response.status_code == 401:
             self._login()
             return self._put(what, payload,True)
         if response.status_code != 200:
@@ -114,16 +99,13 @@ class sonnenbatterie:
         return response.json()
 
     def _post(self, what, isretry=False):
-        if API_WRITE_TOKEN == 'X':
-            raise ValueError('To use POST, set API_WRITE_TOKEN in .env See env.example')
-
         # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
         url = self.baseurl+what
         print("Posting "+url)
         response=requests.post(url,
             headers={'Auth-Token': self.token,'Content-Type': 'application/json'}, timeout=self._batteryRequestTimeout
         )
-        if not isretry and response.status_code==401:
+        if not isretry and response.status_code == 401:
             self._login()
             return self._post(what, True)
         if response.status_code != 200:
