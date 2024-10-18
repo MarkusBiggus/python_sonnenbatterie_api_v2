@@ -1,13 +1,10 @@
-#!/usr/bin/env python3
-# I suspect that I haven't got to grips with the way phthon does things, but soppusely this will setup the path to allod for the sonnen batteri moduel to be in a separate location
-# To me having to do this for testing seems a horrendous hack
 import os, sys
-script_path = os.path.realpath(os.path.dirname(__name__))
-os.chdir(script_path)
-sys.path.append("..")
-#from login import *
-from pprint import pprint
-from sonnenbatterie_api_v2 import sonnenbatterie
+import unittest
+import json
+
+from sonnenbatterie.const import *
+from sonnenbatterie import sonnenbatterie
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,41 +13,75 @@ BATTERIE_HOST = os.getenv('BATTERIE_HOST','X')
 API_READ_TOKEN = os.getenv('API_READ_TOKEN','X')
 API_WRITE_TOKEN = os.getenv('API_WRITE_TOKEN','X')
 
-#if (__name__ == '__main__'):
-if BATTERIE_HOST == 'X' or (API_WRITE_TOKEN == 'X'and API_READ_TOKEN == 'X'):
-    print(f'host: {BATTERIE_HOST} WRITE: {API_WRITE_TOKEN} READ: {API_READ_TOKEN}')
-    raise ValueError('Set BATTERIE_HOST & API_READ_TOKEN or API_WRITE_TOKEN in .env See env.example')
+class TestBatterie(unittest.TestCase):
 
-sb = sonnenbatterie('', API_WRITE_TOKEN if API_WRITE_TOKEN != 'X' else API_READ_TOKEN, BATTERIE_HOST)
-battery_reserve = sb.get_battery_reserve()
-current_charge = sb.get_current_charge_level()
-print("\nConfigurations")
-pprint(sb.get_configurations())
-print("\nCurrent charge level")
-pprint(sb.get_current_charge_level())
-print("\nBattery reserve")
-pprint(sb.get_battery_reserve())
-print("\nSetting absolute reserve to 7")
-pprint(sb.set_battery_reserve(7))
-print("\nUpdated battery reserve")
-pprint(sb.get_battery_reserve())
-print("\nSet relative limit (no offset)")
-pprint(sb.set_battery_reserve_relative_to_currentCharge())
-print("\nBattery reserve with no offset against charge of "+str(current_charge))
-pprint(sb.get_battery_reserve())
-pprint("\nSet relative limit (offset of -5)")
-pprint(sb.set_battery_reserve_relative_to_currentCharge(-5))
-print("\nBattery reserve with offset of -5  against charge of "+str(current_charge))
-pprint(sb.get_battery_reserve())
-print("\nSet relative limit (offset of 0 and minimum of 20)")
-pprint(sb.set_battery_reserve_relative_to_currentCharge(-5, 20))
-print("\nBattery reserve with offset of 0 against minimum charge of 20")
-pprint(sb.get_battery_reserve())
-print("\nSet relative limit (offset of 0 and minimum of 80)")
-pprint(sb.set_battery_reserve_relative_to_currentCharge(0, 80))
-print("\nBattery reserve with offset of 0 against minimum charge of 80")
-pprint(sb.get_battery_reserve())
-print("\nGoing to battery reserve of 5")
-pprint(sb.set_battery_reserve(5))
-print("\nReset battery reserve")
-pprint(sb.get_battery_reserve())
+    if BATTERIE_HOST == 'X' or (API_WRITE_TOKEN == 'X'and API_READ_TOKEN == 'X'):
+        print(f'host: {BATTERIE_HOST} WRITE: {API_WRITE_TOKEN} READ: {API_READ_TOKEN}')
+        raise ValueError('Set BATTERIE_HOST & API_READ_TOKEN or API_WRITE_TOKEN in .env See env.example')
+
+    def setUp(self) -> None:
+        self._battery = sonnenbatterie('', API_WRITE_TOKEN if API_WRITE_TOKEN != 'X' else API_READ_TOKEN, BATTERIE_HOST)
+
+    def test_reserve(self):
+        battery_reserve = self._battery.get_battery_reserve()
+        current_charge = self._battery.get_current_charge_level()
+        print(f'battery_reserve: {battery_reserve}%   current_charge: {current_charge:,}%')
+
+    def test_config(self):
+        OperatingMode = self._battery.get_configuration(SONNEN_CONFIGURATION_OPERATING_MODE)
+        TOU = self._battery.get_configuration(SONNEN_CONFIGURATION_TOU_SCHEDULE)
+        print (f'Operating Mode: {OperatingMode}  TOU_SCHEDULE: {TOU}')
+        connect_timeout = self._battery.get_request_connect_timeout()
+        request_timeout = self._battery.get_request_read_timeout()
+        print (f'connect_timeout: {connect_timeout}s  request_timeout: {request_timeout}s')
+        self.assertEqual( (60, 60), (connect_timeout, request_timeout) )
+
+    def test_battery(self):
+        battery_status = self._battery.get_battery()
+    #    print('battery status: ' + json.dumps(battery_status, indent=2))
+        RSOC = battery_status.get("relativestateofcharge")
+        URC = battery_status.get("usableremainingcapacity")
+        RC = battery_status.get("remainingcapacity")
+        FC = battery_status.get("fullchargecapacity")
+        DCV = battery_status.get("systemdcvoltage")
+        URCWH = URC * DCV
+        print (f'relativestateofcharge: {RSOC:.1f}%')
+        print (f'usableremainingcapacity: {URC:.3f}Ah  remainingcapacity: {RC:.2f}Ah  fullchargecapacity: {FC:.3f}Ah')
+        print (f'systemdcvoltage: {DCV:.2f}V  usableremainingcapacity: {URCWH:,.1f}Wh')
+
+    def test_status(self):
+        system_status = self._battery.get_status()
+    #    print('system status: ' + json.dumps(system_status, indent=2))
+        CW = system_status.get("Consumption_W")
+        PW = system_status.get("Production_W")
+        GFIW = system_status.get("GridFeedIn_W")
+        PAC = system_status.get("Pac_total_W")
+        charging = system_status.get("BatteryCharging") #== 'true'
+        discharging = system_status.get("BatteryDischarging") #== 'true'
+        if discharging:
+            print (f'Consumption: {CW}W  PAC: {PAC}W  Battery Discharging {discharging}')
+        elif charging:
+            print (f'Consumption: {CW}W  PAC: {PAC}W  Production: {PW}W  GridFeedIn: {GFIW}W  Battery Charging {charging}')
+        else:
+            if GFIW > 0:
+                print (f'Consumption: {CW}W  PAC: {PAC}W  Production: {PW}W  GridFeedIn: {GFIW}W  Battery on standby')
+            else:
+                print (f'Consumption: {CW}W  PAC: {PAC}W  GridUse: {abs(GFIW)}W  Battery at reserve')
+
+    def test_powermeter(self):
+        powermeter = self._battery.get_powermeter()
+    #    print('powermeter: ' + json.dumps(powermeter, indent=2))
+
+    def test_inverter(self):
+        inverter = self._battery.get_inverter()
+    #    print('inverter: ' + json.dumps(inverter, indent=2))
+        PAC = inverter.get("pac_total")
+        print (f'inverter PAC: {PAC:.2f}W ')
+
+    def test_latest_data(self):
+        latest_data = self._battery.get_latest_data()
+    #    print('latest_data: ' + json.dumps(latest_data, indent=2))
+        CW = latest_data.get("Consumption_W")
+        PAC = latest_data.get("Pac_total_W")
+        RSOC = latest_data.get("RSOC")
+        print (f'latest Consumption: {CW}W  PAC: {PAC}W  RSOC: {RSOC}%')

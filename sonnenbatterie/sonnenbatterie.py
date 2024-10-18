@@ -29,9 +29,7 @@ class sonnenbatterie:
         self._battery = Sonnen(self.token, self.ipaddress)
         self._battery.set_request_connect_timeouts(self._batteryRequestTimeout)
 
-
 #        self._login()
-
 
 #    def _login(self):
 #        password_sha512 = hashlib.sha512(self.password.encode('utf-8')).hexdigest()
@@ -62,10 +60,10 @@ class sonnenbatterie:
         self._battery.set_request_connect_timeouts(self._batteryRequestTimeout)
 
     def get_request_connect_timeout(self) -> int:
-        return self.request_timeouts[TIMEOUT_CONNECT]
+        return self._batteryRequestTimeout[TIMEOUT_CONNECT]
 
     def set_request_read_timeout(self, timeout:int = 60):
-        self.request_timeouts = (self.request_timeouts[TIMEOUT_CONNECT], timeout)
+        self._batteryRequestTimeout = (self._batteryRequestTimeout[TIMEOUT_CONNECT], timeout)
         self._battery.set_request_connect_timeouts(self._batteryRequestTimeout)
 
     def get_request_read_timeout(self) -> int:
@@ -176,7 +174,7 @@ class sonnenbatterie:
     # these have special handling in some form, for example converting a mode as a number into a string
     def get_current_charge_level(self):
     #    return self.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
-        return self._battery.get_latest_details().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
+        return self._battery.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
 
     def get_operating_mode(self):
         return self.get_configuration(SONNEN_CONFIGURATION_OPERATING_MODE)
