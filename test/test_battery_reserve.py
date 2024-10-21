@@ -21,6 +21,9 @@ class TestBatterie(unittest.TestCase):
 
     def setUp(self) -> None:
         self._battery = sonnenbatterie('', API_WRITE_TOKEN if API_WRITE_TOKEN != 'X' else API_READ_TOKEN, BATTERIE_HOST)
+        success = self._battery.get_configurations()
+        if not success:
+            self.skipTest("Failed to get battery data.")
 
     def test_reserve(self):
         battery_reserve = self._battery.get_battery_reserve()

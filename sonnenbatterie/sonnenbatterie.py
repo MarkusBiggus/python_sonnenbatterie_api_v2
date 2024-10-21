@@ -15,7 +15,7 @@ TIMEOUT_REQUEST=1
 
 class sonnenbatterie:
 
-    def __init__(self,username,token,ipaddress):
+    def __init__(self,username,token,ipaddress) -> None:
 #        self.username=username
         self.token=token
         self.ipaddress=ipaddress
@@ -69,19 +69,19 @@ class sonnenbatterie:
     def get_request_read_timeout(self) -> int:
         return self._batteryRequestTimeout[TIMEOUT_REQUEST]
 
-    def _get(self,what,isretry=False):
-        # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
-        url = self.baseurl+what
-        response=requests.get(url,
-            headers={'Auth-Token': self.token}, timeout=self._batteryRequestTimeout
-        )
-        if not isretry and response.status_code == 401:
-            self._login()
-            return self._get(what,True)
-        if response.status_code != 200:
-            response.raise_for_status()
+    # def _get(self,what,isretry=False):
+    #     # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
+    #     url = self.baseurl+what
+    #     response=requests.get(url,
+    #         headers={'Auth-Token': self.token}, timeout=self._batteryRequestTimeout
+    #     )
+    #     if not isretry and response.status_code == 401:
+    #         self._login()
+    #         return self._get(what,True)
+    #     if response.status_code != 200:
+    #         response.raise_for_status()
 
-        return response.json()
+    #     return response.json()
 
     def _put(self, what, payload, isretry=False):
         # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
