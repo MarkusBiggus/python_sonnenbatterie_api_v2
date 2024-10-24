@@ -1,1 +1,1 @@
-from sonnen_api_v2 import Sonnen
+from sonnenbatterie import sonnenbatterie
