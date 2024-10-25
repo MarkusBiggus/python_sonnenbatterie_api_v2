@@ -73,7 +73,7 @@ class TestBatterie(unittest.TestCase):
 
     def test_powermeter(self):
         powermeter = self._battery.get_powermeter()
-        print('powermeter: ' + json.dumps(powermeter, indent=2))
+    #    print('powermeter: ' + json.dumps(powermeter, indent=2))
         print (f'Power Meter: {powermeter[0]["direction"]} {powermeter[0]["w_total"]:,.2f}W  {powermeter[1]["direction"]} {powermeter[1]["w_total"]:,.2f}W')
 
     def test_inverter(self):
