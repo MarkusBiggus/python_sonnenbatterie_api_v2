@@ -1,4 +1,4 @@
-import pathlib
+#import pathlib
 from setuptools import setup
 
 with open("README.md", "r") as fh:
@@ -22,5 +22,5 @@ setup(
         "Development Status :: 3 - Alpha",
     ],
     python_requires='>=3.6',
-    install_requires=["requests","python-dotenv"],
+    install_requires=["requests","load-dotenv","setuptools","sonnen_api_v2"],
 )
