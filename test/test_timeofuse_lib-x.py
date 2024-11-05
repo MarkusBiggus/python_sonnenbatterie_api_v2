@@ -78,7 +78,7 @@ if (__name__ == '__main__'):
         print ("\nExpected exception message "+str(e.args))
     pprint(tous.get_as_tou_schedule())
 
-    print ("\Building based on returned entry")
+    print ("\nBuilding based on returned entry")
     old_schedule = tous.get_as_tou_schedule()
     tous = timeofuseschedule() 
     tous.load_tou_schedule(old_schedule)

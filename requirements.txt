@@ -1,5 +1,5 @@
 pytest
 pytest-cov
 setuptools==65.5.1
-dotenv>=1.0.1
-urllib3>=1.26.19
+load_dotenv>=1.0.1
+sonnen_api_v2

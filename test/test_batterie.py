@@ -15,7 +15,7 @@ API_WRITE_TOKEN = os.getenv('API_WRITE_TOKEN','X')
 # SonnenBatterie config parameters to check against
 BACKUP_BUFFER_USOC = int(os.getenv('BACKUP_BUFFER_USOC'))
 OPERATING_MODE = int(os.getenv('OPERATING_MODE'))
-LOGGER_NAME = "sonnenapiv2"
+LOGGER_NAME = None #"sonnenapiv2"
 
 class TestBatterie(unittest.TestCase):
 
@@ -25,18 +25,6 @@ class TestBatterie(unittest.TestCase):
     print ('Live Battery Online!')
 
     def setUp(self) -> None:
-#        os.makedirs(os.path.dirname('logs/'+LOGGER_NAME+'.log'), exist_ok=True)
-#        self.logger = logging.getLogger(LOGGER_NAME)
-#        self.logger.setLevel(logging.DEBUG)
-        # create file handler which logs debug messages
-#        fh = logging.FileHandler(filename='logs/'+LOGGER_NAME+'.log', mode='a')
-#        fh.setLevel(logging.DEBUG)
-        # console handler display logs messages to console
-#        ch = logging.StreamHandler(sys.stdout)
-#        ch.setLevel(logging.DEBUG)
-#        self.logger.addHandler(fh)
-#        self.logger.addHandler(ch)
-#        self.logger.info('Sonnen Live Batterie Test suite started.')
 
         self._battery = Sonnen(API_READ_TOKEN, BATTERIE_HOST, LOGGER_NAME)  # Batterie online
 
