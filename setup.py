@@ -5,8 +5,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="sonnenbatterie", # emulates weltmeyer package with same name
-    version="0.1.0",
+    name="sonnenbatterie", # emulates weltmeyer package with same name & version component requires
+    version="0.1.1",
     author="Markus Biggus",
     author_email="author@example.com",
     description="Access Sonnenbatterie REST API V2",
@@ -22,5 +22,5 @@ setup(
         "Development Status :: 3 - Alpha",
     ],
     python_requires='>=3.6',
-    install_requires=["requests","load-dotenv","setuptools","sonnen_api_v2"],
+    install_requires=["requests","load-dotenv","setuptools","sonnen_api_v2>=0.5.11"],
 )
