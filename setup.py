@@ -14,7 +14,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/markusbiggus/python_sonnenbatterie_api_v2",
     packages=["sonnenbatterie"],
-    package_dir={'sonnenbatterie_api_v2': 'sonnenbatterie'},
+    package_dir={'sonnenbatterie' : 'sonnenbatterie'},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
