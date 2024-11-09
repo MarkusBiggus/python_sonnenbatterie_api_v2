@@ -1,3 +1,5 @@
+"""pytest tests/test_battey_reserve.py -s -x -v """
+
 import os, sys
 import unittest
 import json
