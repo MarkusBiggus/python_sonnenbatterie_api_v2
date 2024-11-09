@@ -1,4 +1,4 @@
-#import os
+import os
 #import hashlib
 import requests
 import json
@@ -7,11 +7,13 @@ from .const import *
 # pylint: enable=unused-wildcard-import
 from .timeofuse import timeofuseschedule
 from sonnen_api_v2 import Sonnen
+from dotenv import load_dotenv
 
 # indexes for _batteryRequestTimeout
 TIMEOUT_CONNECT=0
 TIMEOUT_REQUEST=1
 
+load_dotenv()
 
 class sonnenbatterie:
 
@@ -28,6 +30,8 @@ class sonnenbatterie:
         self._batteryRequestTimeout = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
         self._battery = Sonnen(self.token, self.ipaddress)
         self._battery.set_request_connect_timeouts(self._batteryRequestTimeout)
+        self._battery_serial_number = os.getenv("BATTERIE_SN", "unknown")
+        self._battery_model = os.getenv("BATTERIE_MODEL", "unknown")
 
 #        self._login()
 
@@ -139,16 +143,27 @@ class sonnenbatterie:
         return self._battery.get_powermeter()
 
     def get_batterysystem(self):
+        '''battery_system not in V2 - fake it for required component attributes'''
     #    return self._get(SONNEN_API_PATH_BATTERY_SYSTEM)
-        raise ValueError('System Data endpoint not defined for V2 API')
+        configurations = self._battery.get_configurations()
+        systemdata = {'modules': configurations.get('IC_BatteryModules'),
+                      'battery_system': {'system': {'storage_capacity_per_module': configurations.get('CM_MarketingModuleCapacity') }}
+                    }
+        return systemdata
 
     def get_inverter(self):
     #    return self._get(SONNEN_API_PATH_INVERTER)
         return self._battery.get_inverter()
 
     def get_systemdata(self):
+        '''system_data not in V2 - fake it for required component attributes'''
+        configurations = self._battery.get_configurations()
+        systemdata = {'software_version': configurations.get("DE_Software"),
+                      'ERP_ArticleName': self._battery_model,
+                      'DE_Ticket_Number': self._battery_serial_number
+                    }
     #    return self._get(SONNEN_API_PATH_SYSTEM_DATA)
-        raise ValueError('System Data endpoint not defined for V2 API')
+        return systemdata
 
     def get_status(self):
     #    return self._get(SONNEN_API_PATH_STATUS)
@@ -169,7 +184,6 @@ class sonnenbatterie:
     def get_configuration(self, name):
     #    return self._get(SONNEN_API_PATH_CONFIGURATIONS+"/"+name).get(name)
         return self._battery.get_configurations().get(name)
-
 
     # these have special handling in some form, for example converting a mode as a number into a string
     def get_current_charge_level(self):
