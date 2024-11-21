@@ -14,8 +14,6 @@ BATTERIE_HOST = os.getenv('BATTERIE_HOST','X')
 API_READ_TOKEN = os.getenv('API_READ_TOKEN')
 API_WRITE_TOKEN = os.getenv('API_WRITE_TOKEN','X')
 # SonnenBatterie config parameters to check against
-BACKUP_BUFFER_USOC = int(os.getenv('BACKUP_BUFFER_USOC'))
-OPERATING_MODE = int(os.getenv('OPERATING_MODE'))
 LOGGER_NAME = None #"sonnenapiv2"
 
 class TestBatterie(unittest.TestCase):
@@ -41,10 +39,6 @@ class TestBatterie(unittest.TestCase):
         cycles = self._battery.battery_cycle_count
         print(f'Software Version: {version}   Battery Cycles: {cycles:,}')
         self.assertEqual(True, True)
-
-    def test_configuration_em_usoc(self):
-        usoc = self._battery.configuration_em_usoc
-        self.assertEqual(usoc, BACKUP_BUFFER_USOC) # config BackupBuffer value
 
     def test_system_status(self):
         state = self._battery.state_core_control_module

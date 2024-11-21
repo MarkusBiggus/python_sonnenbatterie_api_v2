@@ -1,4 +1,4 @@
-"""pytest tests/test_battey_reserve.py -s -x -v """
+"""python -m unittest test.test_battery_reserve """
 
 import os, sys
 import unittest
