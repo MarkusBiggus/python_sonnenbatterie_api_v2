@@ -1,9 +1,10 @@
+"""python -m unittest test.test_batterie """
 import os
 import unittest
 #import sys
 #import json
 #import logging
-from sonnen_api_v2 import Sonnen
+from sonnen_api_v2.sonnen import Sonnen as Batterie
 #from sonnen_api_v2 import *
 from dotenv import load_dotenv
 
@@ -26,7 +27,7 @@ class TestBatterie(unittest.TestCase):
 
     def setUp(self) -> None:
 
-        self._battery = Sonnen(API_READ_TOKEN, BATTERIE_HOST, LOGGER_NAME)  # Batterie online
+        self._battery = Batterie(API_READ_TOKEN, BATTERIE_HOST) # '80', LOGGER_NAME)  # Batterie online
 
         self._battery.set_request_connect_timeouts( (20, 10) )
 

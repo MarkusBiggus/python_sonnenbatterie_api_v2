@@ -1,6 +1,8 @@
 """Verify package sonnenbatterie V2 API used by sonnenbatterie component works."""
+"""pytest test/test_battery_devinfo.py -s -v -x """
 
 import os
+#import pytest
 
 from dotenv import load_dotenv
 from sonnenbatterie import sonnenbatterie
@@ -41,6 +43,7 @@ def test_batterysystem() -> None:
     latestData = {}
     # code syntax from custom_component coordinator.py
     latestData["battery_system"] = _battery.get_batterysystem()
+    print(f'latest: {latestData}')
     batt_module_capacity = int(
         latestData["battery_system"]["battery_system"]["system"][
             "storage_capacity_per_module"
