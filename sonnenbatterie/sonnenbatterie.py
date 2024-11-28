@@ -28,8 +28,8 @@ class sonnenbatterie:
 #        self._batteryReadTimeout = DEFAULT_READ_FROM_BATTERY_TIMEOUT
 #        self._batteryRequestTimeout = (self._batteryConnectTimeout, self._batteryReadTimeout)
         self._batteryRequestTimeout = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
-        self._battery = Batterie(self.token, self.ipaddress)
-        self._battery.set_request_connect_timeouts(self._batteryRequestTimeout)
+        self.batterie = Batterie(self.token, self.ipaddress)
+        self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
         self._battery_serial_number = os.getenv("BATTERIE_SN", "unknown")
         self._battery_model = os.getenv("BATTERIE_MODEL", "unknown")
 
@@ -61,14 +61,14 @@ class sonnenbatterie:
 
     def set_request_connect_timeout(self, timeout:int = 60):
         self._batteryRequestTimeout = (timeout, self._batteryRequestTimeout[TIMEOUT_REQUEST])
-        self._battery.set_request_connect_timeouts(self._batteryRequestTimeout)
+        self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
 
     def get_request_connect_timeout(self) -> int:
         return self._batteryRequestTimeout[TIMEOUT_CONNECT]
 
     def set_request_read_timeout(self, timeout:int = 60):
         self._batteryRequestTimeout = (self._batteryRequestTimeout[TIMEOUT_CONNECT], timeout)
-        self._battery.set_request_connect_timeouts(self._batteryRequestTimeout)
+        self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
 
     def get_request_read_timeout(self) -> int:
         return self._batteryRequestTimeout[TIMEOUT_REQUEST]
@@ -140,19 +140,19 @@ class sonnenbatterie:
 
     def get_powermeter(self):
     #    return self._get(SONNEN_API_PATH_POWER_METER)
-        return self._battery.get_powermeter()
+        return self.batterie.get_powermeter()
 
     def get_batterysystem(self):
         '''battery_system not in V2 - fake it for required component attributes'''
-        return self._battery.get_batterysystem()
+        return self.batterie.get_batterysystem()
 
     def get_inverter(self):
     #    return self._get(SONNEN_API_PATH_INVERTER)
-        return self._battery.get_inverter()
+        return self.batterie.get_inverter()
 
     def get_systemdata(self):
         '''system_data not in V2 - fake it for required component attributes'''
-        configurations = self._battery.get_configurations()
+        configurations = self.batterie.get_configurations()
         systemdata = {'software_version': configurations.get("DE_Software"),
                       'ERP_ArticleName': self._battery_model,
                       'DE_Ticket_Number': self._battery_serial_number
@@ -162,28 +162,28 @@ class sonnenbatterie:
 
     def get_status(self):
     #    return self._get(SONNEN_API_PATH_STATUS)
-        return self._battery.get_status()
+        return self.batterie.get_status()
 
     def get_battery(self):
     #    return self._get(SONNEN_API_PATH_BATTERY)
-        return self._battery.get_battery()
+        return self.batterie.get_battery()
 
     def get_latest_data(self):
     #    return self._get(SONNEN_API_PATH_LATEST_DATA)
-        return self._battery.get_latest_data()
+        return self.batterie.get_latest_data()
 
     def get_configurations(self):
     #    return self._get(SONNEN_API_PATH_CONFIGURATIONS)
-        return self._battery.get_configurations()
+        return self.batterie.get_configurations()
 
     def get_configuration(self, name):
     #    return self._get(SONNEN_API_PATH_CONFIGURATIONS+"/"+name).get(name)
-        return self._battery.get_configurations().get(name)
+        return self.batterie.get_configurations().get(name)
 
     # these have special handling in some form, for example converting a mode as a number into a string
     def get_current_charge_level(self):
     #    return self.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
-        return self._battery.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
+        return self.batterie.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
 
     def get_operating_mode(self):
         return self.get_configuration(SONNEN_CONFIGURATION_OPERATING_MODE)
