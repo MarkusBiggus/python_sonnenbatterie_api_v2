@@ -2,7 +2,7 @@
 """pytest test/test_battery_devinfo.py -s -v -x """
 
 import os
-#import pytest
+import pytest
 
 from dotenv import load_dotenv
 from sonnenbatterie import sonnenbatterie
@@ -28,7 +28,7 @@ def test_devinfo() -> None:
     )
     assert _battery is not False
     system_data = _battery.get_systemdata()
-    print(f'system_data type: {type(system_data)}')
+    #print(f'system_data type: {type(system_data)}')
     model = system_data.get("ERP_ArticleName", "unknown")
     name=f"{DOMAIN} {system_data.get('DE_Ticket_Number', 'unknown')}"
     sw_version = system_data.get("software_version", "unknown")
@@ -61,7 +61,7 @@ def test_powermeter() -> None:
     latestData = {}
     # code syntax from custom_component coordinator.py
     latestData["powermeter"] = _battery.get_powermeter()
-    print(f'powermeter type: {type(latestData["powermeter"])}')
+    #print(f'powermeter type: {type(latestData["powermeter"])}')
     if(isinstance(latestData["powermeter"],dict)):
         newPowerMeters=[]
         for index,dictIndex in enumerate(latestData["powermeter"]):
@@ -78,7 +78,8 @@ def test_status() -> None:
     latestData["status"] = _battery.get_status()
     #print(f'status type: {type(latestData["status"])}')
     latestData["battery_info"] = _battery.get_battery()
-    print(f'status type: {type(latestData["battery_info"])}')
+    #print(f'status type: {type(latestData["battery_info"])}')
+    #print(f'{latestData}')
     # if latestData["status"]["BatteryCharging"]:
     #     battery_current_state = "charging"
     # elif latestData["status"]["BatteryDischarging"]:
@@ -88,9 +89,10 @@ def test_status() -> None:
     battery_current_state = latestData["battery_info"].get('current_state')
     #print(f'{latestData["battery_info"]}')
     rsoc = latestData["battery_info"].get('relativestateofcharge')
+    systemstatus = latestData["battery_info"].get('systemstatus')
     health = latestData["battery_info"].get('measurements').get('battery_status').get('stateofhealth')
     print(f'battery_state: {battery_current_state}  RSOC: {rsoc}%')
-    assert health == rsoc
+    assert health == systemstatus
 
 def test_batteryinfo() -> None:
     _battery = sonnenbatterie(

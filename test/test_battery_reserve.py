@@ -48,11 +48,11 @@ class TestBatterie(unittest.TestCase):
         URC = battery_status.get("usableremainingcapacity")
         RC = battery_status.get("remainingcapacity")
         FC = battery_status.get("fullchargecapacity")
-        DCV = battery_status.get("systemdcvoltage")
+        DCV = battery_status.get("nominalmoduledcvoltage")
         URCWH = URC * DCV
         print (f'relativestateofcharge: {RSOC:.1f}%')
         print (f'usableremainingcapacity: {URC:.3f}Ah  remainingcapacity: {RC:.2f}Ah  fullchargecapacity: {FC:.3f}Ah')
-        print (f'systemdcvoltage: {DCV:.2f}V  usableremainingcapacity: {URCWH:,.1f}Wh')
+        print (f'nominalmoduledcvoltage: {DCV:.2f}V  usableremainingcapacity: {URCWH:,.1f}Wh')
 
     def test_status(self):
         system_status = self._battery.get_status()
