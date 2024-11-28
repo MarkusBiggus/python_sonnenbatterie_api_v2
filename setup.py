@@ -22,5 +22,5 @@ setup(
         "Development Status :: 3 - Alpha",
     ],
     python_requires='>=3.6',
-    install_requires=["requests","load-dotenv","setuptools","sonnen_api_v2>=0.5.11"],
+    install_requires=["requests","load_dotenv","setuptools","sonnen_api_v2>=0.5.12"],
 )
