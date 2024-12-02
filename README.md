@@ -6,4 +6,4 @@ There are no API V1 calls either.
 
 pip install "git+https://github.com/MarkusBiggus/sonnen_api_v2.git"
 
-pip install "git+https://github.com/MarkusBiggus/python_sonnenbatterie_api_v2.git" --target sonnenbatterie
+pip install "git+https://github.com/MarkusBiggus/python_sonnenbatterie_api_v2.git" --target sonnenbatterie --no-deps
