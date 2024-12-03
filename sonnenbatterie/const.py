@@ -1,6 +1,4 @@
-from datetime import time
-#from requests import Timeout
-
+import logging
 
 DEFAULT_BATTERY_LOGIN_TIMEOUT=120
 DEFAULT_CONNECT_TO_BATTERY_TIMEOUT=60
@@ -33,3 +31,5 @@ SONNEN_API_PATH_BATTERY="battery"
 
 SONNEN_CHARGE_PATH="charge"
 SONNEN_DISCHARGE_PATH="discharge"
+
+LOGGER = logging.getLogger(__package__)

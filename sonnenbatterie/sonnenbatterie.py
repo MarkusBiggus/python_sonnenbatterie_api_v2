@@ -17,7 +17,7 @@ load_dotenv()
 
 class sonnenbatterie:
 
-    def __init__(self,username,token,ipaddress) -> None:
+    def __init__(self, username, token, ipaddress) -> None:
 #        self.username=username
         self.token=token
         self.ipaddress=ipaddress
@@ -29,6 +29,7 @@ class sonnenbatterie:
 #        self._batteryRequestTimeout = (self._batteryConnectTimeout, self._batteryReadTimeout)
         self._batteryRequestTimeout = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
         self.batterie = Batterie(self.token, self.ipaddress)
+#        LOGGER.error(f'Unable to connect to sonnenbatterie: {e}')
         self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
         self._battery_serial_number = os.getenv("BATTERIE_SN", "unknown")
         self._battery_model = os.getenv("BATTERIE_MODEL", "unknown")
