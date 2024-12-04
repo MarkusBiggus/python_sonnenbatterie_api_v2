@@ -1,4 +1,4 @@
-""" SonnenBatterie API V2 component """
+""" SonnenBatterie API V2 package """
 from .sonnenbatterie import sonnenbatterie
 __all__ = (
     "set_login_timeout",

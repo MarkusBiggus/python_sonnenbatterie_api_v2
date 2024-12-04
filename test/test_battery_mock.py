@@ -14,12 +14,7 @@ from dotenv import load_dotenv
 from sonnen_api_v2.sonnen import Sonnen as Batterie
 
 
-from . mock_status_charging import status_charging
-from . mock_latest_charging import latest_charging
-from . mock_powermeter import mock_powermeter
-from . mock_battery import mock_battery
-from . mock_inverter import mock_inverter
-from . mock_configurations import mock_configurations
+from . mock_sonnenbatterie_v2_charging import __mock_status_charging, __mock_latest_charging, __mock_configurations, __mock_battery, __mock_powermeter, __mock_inverter
 
 load_dotenv()
 
@@ -62,12 +57,12 @@ if LOGGER_NAME is not None:
 async def test_get_batterie_charging(mocker):
 
     """Batterie charging using mock data"""
-    mocker.patch.object(Batterie, "fetch_configurations", AsyncMock(return_value=mock_configurations()))
-    mocker.patch.object(Batterie, "fetch_status", AsyncMock(return_value=status_charging()))
-    mocker.patch.object(Batterie, "fetch_latest_details", AsyncMock(return_value=latest_charging()))
-    mocker.patch.object(Batterie, "fetch_powermeter", AsyncMock(return_value=mock_powermeter()))
-    mocker.patch.object(Batterie, "fetch_battery_status", AsyncMock(return_value=mock_battery()))
-    mocker.patch.object(Batterie, "fetch_inverter_data", AsyncMock(return_value=mock_inverter()))
+    mocker.patch.object(Batterie, "fetch_configurations", AsyncMock(return_value=__mock_configurations()))
+    mocker.patch.object(Batterie, "fetch_status", AsyncMock(return_value=__mock_status_charging()))
+    mocker.patch.object(Batterie, "fetch_latest_details", AsyncMock(return_value=__mock_latest_charging()))
+    mocker.patch.object(Batterie, "fetch_powermeter", AsyncMock(return_value=__mock_powermeter()))
+    mocker.patch.object(Batterie, "fetch_battery_status", AsyncMock(return_value=__mock_battery()))
+    mocker.patch.object(Batterie, "fetch_inverter_data", AsyncMock(return_value=__mock_inverter()))
 
     _battery = Batterie(API_READ_TOKEN, BATTERIE_HOST, BATTERIE_PORT, LOGGER_NAME)  # Batterie online
 

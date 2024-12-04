@@ -1,15 +1,49 @@
 import json
-def latest_charging()-> json:
+def __mock_status_discharging()-> json:
+    return {
+        'Apparent_output': 438,
+        'BackupBuffer': '20',
+        'BatteryCharging': False,
+        'BatteryDischarging': True,
+        'Consumption_Avg': 563,
+        'Consumption_W': 541,
+        'Fac': 50.0167121887207,
+        'FlowConsumptionBattery': True,
+        'FlowConsumptionGrid': False,
+        'FlowConsumptionProduction': True,
+        'FlowGridBattery': False,
+        'FlowProductionBattery': False,
+        'FlowProductionGrid': False,
+        'GridFeedIn_W': -20,
+        'IsSystemInstalled': 1,
+        'OperatingMode': '2',
+        'Pac_total_W': 438,
+        'Production_W': 102,
+        'RSOC': 99,
+        'RemainingCapacity_Wh': 40181,
+        'Sac1': 438,
+        'Sac2': None,
+        'Sac3': None,
+        'SystemStatus': 'OnGrid',
+        'Timestamp': '2022-05-06 20:24:39',
+        'USOC': 99,
+        'Uac': 237,
+        'Ubat': 211,
+        'dischargeNotAllowed': False,
+        'generator_autostart': False
+    }
+
+def __mock_latest_discharging()-> json:
     return {
         'FullChargeCapacity': 20683.490,
         'GridFeedIn_W': 0,
-        'Production_W': 2972,
-        'Consumption_W': 1578,
-        'Pac_total_W': -1394,
-        'RSOC': 98,
-        'SetPoint_W': -145,
-        'Timestamp': '2022-04-30 17:00:58',
-        'USOC': 98,
+        'Pac_total_W': 1439,
+        'Consumption_W': 1541,
+        'Production_W': 102,
+        'RSOC': 99,
+        'SetPoint_W': 439,
+        'Timestamp': '2022-05-06 20:24:38',
+        'USOC': 99,
         'UTC_Offet': 2,
         'ic_status': {
             'DC Shutdown Reason': {
@@ -88,10 +122,10 @@ def latest_charging()-> json:
                 'Self test successful finished': False
             },
             'nrbatterymodules': 4,
-            'secondssincefullcharge': 3720,
+            'secondssincefullcharge': 574,
             'statebms': 'ready',
             'statecorecontrolmodule': 'ongrid',
             'stateinverter': 'running',
-            'timestamp': 'Sat Apr 30 17:00:57 2022'
+            'timestamp': 'Fri May 6 20:24:36 2022'
         }
     }

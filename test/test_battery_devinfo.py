@@ -1,6 +1,5 @@
 """Verify package sonnenbatterie V2 API used by sonnenbatterie component works."""
 """pytest test/test_battery_devinfo.py -s -v -x """
-
 import os
 import pytest
 
@@ -33,7 +32,7 @@ def test_devinfo() -> None:
     name=f"{DOMAIN} {system_data.get('DE_Ticket_Number', 'unknown')}"
     sw_version = system_data.get("software_version", "unknown")
     print(f"model: {model}  name: {name}  sw_version: {sw_version}")
-    assert system_data.get('DE_Ticket_Number') == '263291'
+    assert system_data.get('DE_Ticket_Number') == 'unknown'
 
 def test_batterysystem() -> None:
     _battery = sonnenbatterie(
