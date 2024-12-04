@@ -1,23 +1,21 @@
-import os
+#import os
+#from dotenv import load_dotenv
 #import hashlib
+from typing import Union
 import requests
 import json
-# pylint: disable=unused-wildcard-import
 from .const import *
-# pylint: enable=unused-wildcard-import
 from .timeofuse import timeofuseschedule
-from sonnen_api_v2.sonnen import Sonnen as Batterie
-from dotenv import load_dotenv
+from sonnen_api_v2.sonnen import Sonnen as Batterie, BatterieError
 
 # indexes for _batteryRequestTimeout
 TIMEOUT_CONNECT=0
 TIMEOUT_REQUEST=1
 
-load_dotenv()
+#load_dotenv()
 
 class sonnenbatterie:
-
-    def __init__(self,username,token,ipaddress) -> None:
+    def __init__(self, username, token, ipaddress) -> None:
 #        self.username=username
         self.token=token
         self.ipaddress=ipaddress
@@ -29,9 +27,13 @@ class sonnenbatterie:
 #        self._batteryRequestTimeout = (self._batteryConnectTimeout, self._batteryReadTimeout)
         self._batteryRequestTimeout = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
         self.batterie = Batterie(self.token, self.ipaddress)
+        batterie_status = self.batterie.get_status()
+        if batterie_status is False:
+            LOGGER.error('Unable to connect to sonnenbatterie!')
+            raise BatterieError('Unable to connect to sonnenbatterie!')
         self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
-        self._battery_serial_number = os.getenv("BATTERIE_SN", "unknown")
-        self._battery_model = os.getenv("BATTERIE_MODEL", "unknown")
+        self._battery_serial_number = 'unknown' #os.getenv("BATTERIE_SN", "unknown")
+        self._battery_model = 'unknown' #os.getenv("BATTERIE_MODEL", "unknown")
 
 #        self._login()
 
@@ -142,10 +144,6 @@ class sonnenbatterie:
     #    return self._get(SONNEN_API_PATH_POWER_METER)
         return self.batterie.get_powermeter()
 
-    def get_batterysystem(self):
-        '''battery_system not in V2 - fake it for required component attributes'''
-        return self.batterie.get_batterysystem()
-
     def get_inverter(self):
     #    return self._get(SONNEN_API_PATH_INVERTER)
         return self.batterie.get_inverter()
@@ -160,13 +158,62 @@ class sonnenbatterie:
     #    return self._get(SONNEN_API_PATH_SYSTEM_DATA)
         return systemdata
 
+    def get_batterysystem(self)-> Union[str, bool]:
+        """battery_system not in V2 - fake it for required component attributes"""
+
+        configurations_data = self.batterie.get_configurations()
+        if configurations_data is None:
+            return None
+        systemdata = {'modules':
+                        configurations_data.get('IC_BatteryModules'),
+                        'battery_system':
+                        {
+                            'system':
+                            {
+                                'storage_capacity_per_module': configurations_data.get('CM_MarketingModuleCapacity'),
+                                'depthofdischargelimit': configurations_data.get('DepthOfDischargeLimit'),
+                            }
+                        }
+
+                    }
+        return systemdata
+
     def get_status(self):
     #    return self._get(SONNEN_API_PATH_STATUS)
         return self.batterie.get_status()
 
     def get_battery(self):
+        """Battery status for sonnenbatterie wrapper
+            Fake V1 API data used by ha sonnenbatterie component
+            Returns:
+                json response
+        """
     #    return self._get(SONNEN_API_PATH_BATTERY)
-        return self.batterie.get_battery()
+        battery_status = self.batterie.get_battery()
+
+        configurations_data = self.batterie.get_configurations()
+        if configurations_data is None:
+            return None
+
+        """ current_state index of: ["standby", "charging", "discharging", "charged", "discharged"] """
+        if self.batterie.status_battery_charging:
+            battery_status['current_state'] = "charging"
+        elif self.batterie.status_battery_discharging:
+            battery_status['current_state'] = "discharging"
+        elif self.batterie.battery_rsoc > 98:
+            battery_status['current_state'] = "charged"
+        elif self.batterie.battery_usable_remaining_capacity < 2:
+            battery_status['current_state'] = "discharged"
+        else:
+            battery_status['current_state'] = "standby"
+
+        measurements = {'battery_status': {'cyclecount': self.batterie.battery_cycle_count,
+                                        'stateofhealth': int(battery_status.get('systemstatus'))
+                                        }
+                        }
+        battery_status['measurements'] = measurements
+
+        return battery_status
 
     def get_latest_data(self):
     #    return self._get(SONNEN_API_PATH_LATEST_DATA)
