@@ -92,15 +92,3 @@ def test_status() -> None:
     health = latestData["battery_info"].get('measurements').get('battery_status').get('stateofhealth')
     print(f'battery_state: {battery_current_state}  RSOC: {rsoc}%')
     assert health == systemstatus
-
-def test_batteryinfo() -> None:
-    _battery = sonnenbatterie(
-        "", API_WRITE_TOKEN if API_WRITE_TOKEN != "X" else API_READ_TOKEN, BATTERIE_HOST
-    )
-    assert _battery is not False
-    latestData = {}
-    # code syntax from custom_component coordinator.py
-        # fixed value, percentage of total installed power reserved for
-        # internal battery system purposes
-
-

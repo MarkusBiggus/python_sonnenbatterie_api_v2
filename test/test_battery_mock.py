@@ -84,22 +84,29 @@ async def test_sonnen_package(mocker):
     print(f'remaining_capacity (raw): {remaining_capacity:,}Wh  remaining_usable (raw): {remaining_capacity_usable:,}Wh')
     print(f'full_charge_capacity (raw): {total_capacity_raw:,}Wh')
 
-
-#@pytest.mark.asyncio
-#async def test_batterie_emulator(mocker):
-def test_batterie_emulator(mocker):
+# ASYNC like ha component
+@pytest.mark.asyncio
+async def test_batterie_emulator_mocked(mocker):
+#def test_batterie_emulator(mocker):
     """sonnenbatterie_api_v2 package: Batterie charging using mock data"""
     mocker.patch.object(sonnenbatterie, "check_status", AsyncMock(return_value=__mock_status_charging()))
     _battery = sonnenbatterie("", 'fakeToken', 'fakeHost')
 
-    mocker.patch.object(_battery.batterie, "fetch_configurations", AsyncMock(return_value=__mock_configurations()))
-    mocker.patch.object(_battery.batterie, "fetch_latest_details", AsyncMock(return_value=__mock_latest_charging()))
-    mocker.patch.object(_battery.batterie, "fetch_powermeter", AsyncMock(return_value=__mock_powermeter()))
-    mocker.patch.object(_battery.batterie, "fetch_battery_status", AsyncMock(return_value=__mock_battery()))
-    mocker.patch.object(_battery.batterie, "fetch_inverter_data", AsyncMock(return_value=__mock_inverter()))
+    mocker.patch.object(Batterie, "fetch_configurations", AsyncMock(return_value=__mock_configurations()))
+    mocker.patch.object(Batterie, "fetch_status", AsyncMock(return_value=__mock_status_charging()))
+    mocker.patch.object(Batterie, "fetch_latest_details", AsyncMock(return_value=__mock_latest_charging()))
+    mocker.patch.object(Batterie, "fetch_powermeter", AsyncMock(return_value=__mock_powermeter()))
+    mocker.patch.object(Batterie, "fetch_battery_status", AsyncMock(return_value=__mock_battery()))
+    mocker.patch.object(Batterie, "fetch_inverter_data", AsyncMock(return_value=__mock_inverter()))
+
+    # mocker.patch.object(_battery.batterie, "fetch_configurations", AsyncMock(return_value=__mock_configurations()))
+    # mocker.patch.object(_battery.batterie, "fetch_latest_details", AsyncMock(return_value=__mock_latest_charging()))
+    # mocker.patch.object(_battery.batterie, "fetch_powermeter", AsyncMock(return_value=__mock_powermeter()))
+    # mocker.patch.object(_battery.batterie, "fetch_battery_status", AsyncMock(return_value=__mock_battery()))
+    # mocker.patch.object(_battery.batterie, "fetch_inverter_data", AsyncMock(return_value=__mock_inverter()))
 
     #same package tests above via emulator
-    _battery.batterie.update() # get mocked response
+    await _battery.batterie.async_update() # get mocked responses
 #    await _battery.batterie.async_update()
     version = _battery.batterie.configuration_de_software # mock_configurations
     status = _battery.batterie.system_status # latest_charging
@@ -124,12 +131,27 @@ def test_batterie_emulator(mocker):
             total_installed_capacity * batt_reserve_percent / 100.0
         )
     remaining_capacity = (
-            int(total_capacity_raw * _battery.battery_rsoc) / 100.0
+            int(total_capacity_raw * _battery.batterie.battery_rsoc) / 100.0
         )
     remaining_capacity_usable = max(
             0, int(remaining_capacity - reserved_capacity))
     print(f'remaining_capacity (raw): {remaining_capacity:,}Wh  remaining_usable (raw): {remaining_capacity_usable:,}Wh')
     print(f'full_charge_capacity (raw): {total_capacity_raw:,}Wh')
+
+
+# ASYNC like ha component
+@pytest.mark.asyncio
+async def test_batterie_emulator_ha(mocker):
+    """sonnenbatterie_api_v2 package: Batterie charging using mock data"""
+    mocker.patch.object(sonnenbatterie, "check_status", AsyncMock(return_value=__mock_status_charging()))
+    _battery = sonnenbatterie("", 'fakeToken', 'fakeHost')
+
+    mocker.patch.object(Batterie, "fetch_configurations", AsyncMock(return_value=__mock_configurations()))
+    mocker.patch.object(Batterie, "fetch_status", AsyncMock(return_value=__mock_status_charging()))
+    mocker.patch.object(Batterie, "fetch_latest_details", AsyncMock(return_value=__mock_latest_charging()))
+    mocker.patch.object(Batterie, "fetch_powermeter", AsyncMock(return_value=__mock_powermeter()))
+    mocker.patch.object(Batterie, "fetch_battery_status", AsyncMock(return_value=__mock_battery()))
+    mocker.patch.object(Batterie, "fetch_inverter_data", AsyncMock(return_value=__mock_inverter()))
 
     #emulated methods
     latestData = {}
@@ -137,25 +159,58 @@ def test_batterie_emulator(mocker):
     latestData["battery_system"] = _battery.get_batterysystem()
     #print(f'battery_system type: {type(latestData["battery_system"])}')
     latestData["status"] = _battery.get_status()
-    latestData["battery_info"] = _battery.get_battery()
     batt_module_capacity = int(
         latestData["battery_system"]["battery_system"]["system"][
             "storage_capacity_per_module"
         ]
     )
-    dod = int(latestData["battery_system"]["battery_system"]["system"]['depthofdischargelimit'])
-    batt_reserve_percent = 100 - dod
     batt_module_count = int(latestData["battery_system"]["modules"])
     total_installed_capacity = int(batt_module_count * batt_module_capacity)
-    print(f'module_capacity: {batt_module_capacity:,}Wh  module_count: {batt_module_count}  Installed Capacity: {total_installed_capacity:,}Wh')
-    total_capacity_raw = _battery.batterie.battery_full_charge_capacity_wh
-    reserved_capacity = int(
-            total_installed_capacity * batt_reserve_percent / 100.0
-        )
-    remaining_capacity = (
-            int(total_capacity_raw * _battery.batterie.battery_rsoc) / 100.0
-        )
-    remaining_capacity_usable = max(
-            0, int(remaining_capacity - reserved_capacity))
-    print(f'remaining_capacity (raw): {remaining_capacity:,}Wh  remaining_usable (raw): {remaining_capacity_usable:,}Wh')
-    print(f'full_charge_capacity (raw): {total_capacity_raw:,}Wh')
+
+    # from sonnenbatterie ha component coordinator
+    batt_reserved_factor = 7.0
+    latestData["battery_info"] = {}
+#    latestData["battery_info"]["current_state"] = battery_current_state
+    latestData["battery_info"][
+        "total_installed_capacity"
+    ] = total_installed_capacity = int(batt_module_count * batt_module_capacity)
+    latestData["battery_info"]["reserved_capacity"] = reserved_capacity = int(
+        total_installed_capacity * (batt_reserved_factor / 100.0)
+    )
+    latestData["battery_info"]["remaining_capacity"] = remaining_capacity = (
+        int(total_installed_capacity * latestData["status"]["RSOC"]) / 100.0
+    )
+    latestData["battery_info"]["remaining_capacity_usable"] = max(
+        0, int(remaining_capacity - reserved_capacity)
+    )
+
+    if latestData["status"]["BatteryCharging"]:
+        battery_current_state = "charging"
+    elif latestData["status"]["BatteryDischarging"]:
+        battery_current_state = "discharging"
+    elif latestData["status"]["RSOC"] > 98:
+        battery_current_state = "charged"
+    elif remaining_capacity < 2:
+        battery_current_state = "discharged"
+    else:
+        battery_current_state = "standby"
+
+    latestData["battery_info"]["current_state"] = battery_current_state
+    print(f'battery_info: {latestData["battery_info"]}')
+
+    # every other get method
+    login_timeout = _battery.get_login_timeout()
+    request_connect_timeout = _battery.get_request_connect_timeout()
+    request_read_timeout = _battery.get_request_read_timeout()
+    version =  _battery.get_configuration("DE_Software")
+    print(f'login_timeout: {login_timeout}  connect_timeout: {request_connect_timeout}  read_timeout: {request_read_timeout}')
+    current_charge_level =  _battery.get_current_charge_level()
+    operating_mode =  _battery.get_operating_mode()
+    operating_mode_name =  _battery.get_operating_mode_name()
+    battery_reserve =  _battery.get_battery_reserve()
+    print(f'current_charge_level: {current_charge_level}  operating_mode: {operating_mode}  name: {operating_mode_name}  battery_reserve:{battery_reserve}%')
+    time_of_use_schedule_as_string =  _battery.get_time_of_use_schedule_as_string()
+    time_of_use_schedule_as_json_objects =  _battery.get_time_of_use_schedule_as_json_objects()
+    time_of_use_schedule_as_schedule =  _battery.get_time_of_use_schedule_as_schedule()
+    print(f'TOU: schedule_as_string: {time_of_use_schedule_as_string}  schedule_as_json: {time_of_use_schedule_as_json_objects}  schedule_as_schedule: {time_of_use_schedule_as_schedule}')
+    assert version == '1.14.5'
