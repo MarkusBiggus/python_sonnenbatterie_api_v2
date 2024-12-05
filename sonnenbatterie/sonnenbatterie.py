@@ -6,7 +6,7 @@ import requests
 import json
 from .const import *
 from .timeofuse import timeofuseschedule
-from sonnen_api_v2.sonnen import Sonnen as Batterie, BatterieError
+from sonnen_api_v2 import Batterie, BatterieError
 
 # indexes for _batteryRequestTimeout
 TIMEOUT_CONNECT=0
@@ -27,14 +27,16 @@ class sonnenbatterie:
 #        self._batteryRequestTimeout = (self._batteryConnectTimeout, self._batteryReadTimeout)
         self._batteryRequestTimeout = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
         self.batterie = Batterie(self.token, self.ipaddress)
-        batterie_status = self.batterie.get_status()
+        batterie_status = self.check_status(self)
         if batterie_status is False:
             LOGGER.error('Unable to connect to sonnenbatterie!')
             raise BatterieError('Unable to connect to sonnenbatterie!')
+
+#        batterie_status = await self.batterie.fetch_status #get_status()
+#        if batterie_status is None:
         self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
         self._battery_serial_number = 'unknown' #os.getenv("BATTERIE_SN", "unknown")
         self._battery_model = 'unknown' #os.getenv("BATTERIE_MODEL", "unknown")
-
 #        self._login()
 
 #    def _login(self):
@@ -53,6 +55,10 @@ class sonnenbatterie:
 #        token=getsession.json()['authentication_token']
         #print(token)
 #        self.token=token
+
+    def check_status(self):
+        # needed for mock
+        return self.batterie.get_status()
 
     def set_login_timeout(self, timeout:int = 120):
         # not used by wrapper

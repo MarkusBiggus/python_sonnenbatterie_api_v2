@@ -4,7 +4,8 @@ import unittest
 #import sys
 #import json
 #import logging
-from sonnen_api_v2.sonnen import Sonnen as Batterie
+#from sonnen_api_v2.sonnen import Sonnen as Batterie
+from sonnen_api_v2 import Batterie
 #from sonnen_api_v2 import *
 from dotenv import load_dotenv
 

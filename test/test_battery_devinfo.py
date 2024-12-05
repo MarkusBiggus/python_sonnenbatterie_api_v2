@@ -103,28 +103,4 @@ def test_batteryinfo() -> None:
         # fixed value, percentage of total installed power reserved for
         # internal battery system purposes
 
-    latestData["battery_system"] = _battery.get_batterysystem()
-    #print(f'battery_system type: {type(latestData["battery_system"])}')
-    latestData["status"] = _battery.get_status()
-    latestData["battery_info"] = _battery.get_battery()
-    batt_module_capacity = int(
-        latestData["battery_system"]["battery_system"]["system"][
-            "storage_capacity_per_module"
-        ]
-    )
-    dod = int(latestData["battery_system"]["battery_system"]["system"]['depthofdischargelimit'])
-    batt_reserve_percent = 100 - dod
-    batt_module_count = int(latestData["battery_system"]["modules"])
-    total_installed_capacity = int(batt_module_count * batt_module_capacity)
-    print(f'module_capacity: {batt_module_capacity:,}Wh  module_count: {batt_module_count}  Installed Capacity: {total_installed_capacity:,}Wh')
-    total_capacity_raw = _battery.batterie.battery_full_charge_capacity_wh
-    reserved_capacity = int(
-            total_installed_capacity * batt_reserve_percent / 100.0
-        )
-    remaining_capacity = (
-            int(total_capacity_raw * _battery.batterie.battery_rsoc) / 100.0
-        )
-    remaining_capacity_usable = max(
-            0, int(remaining_capacity - reserved_capacity))
-    print(f'remaining_capacity (raw): {remaining_capacity:,}Wh  remaining_usable (raw): {remaining_capacity_usable:,}Wh')
-    print(f'full_charge_capacity (raw): {total_capacity_raw:,}Wh')
+

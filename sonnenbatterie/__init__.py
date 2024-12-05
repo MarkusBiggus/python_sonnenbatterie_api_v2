@@ -1,6 +1,7 @@
 """ SonnenBatterie API V2 package """
 from .sonnenbatterie import sonnenbatterie
 __all__ = (
+    "check_status",
     "set_login_timeout",
     "get_login_timeout",
     "set_request_connect_timeout",
