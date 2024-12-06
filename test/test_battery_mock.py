@@ -156,8 +156,8 @@ async def test_batterie_emulator_ha(mocker):
     #emulated methods
     latestData = {}
 
-    latestData["battery_system"] = _battery.get_batterysystem()
-    #print(f'battery_system type: {type(latestData["battery_system"])}')
+    latestData["battery_system"] = await _battery.async_get_batterysystem()
+    print(f'battery_system type: {type(latestData["battery_system"])} {latestData["battery_system"]}')
     latestData["status"] = _battery.get_status()
     batt_module_capacity = int(
         latestData["battery_system"]["battery_system"]["system"][

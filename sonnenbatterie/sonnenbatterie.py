@@ -1,7 +1,15 @@
 #import os
 #from dotenv import load_dotenv
 #import hashlib
-from typing import Union
+import asyncio
+from collections.abc import (
+    Callable,
+)
+from typing import (
+    Any,
+    Union,
+    Dict,
+)
 import requests
 import json
 from .const import *
@@ -37,9 +45,23 @@ class sonnenbatterie:
         self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
         self._battery_serial_number = 'unknown' #os.getenv("BATTERIE_SN", "unknown")
         self._battery_model = 'unknown' #os.getenv("BATTERIE_MODEL", "unknown")
+        try:
+            self.loop = asyncio.get_running_loop()
+        except RuntimeError:  # no event loop running:
+            self.loop = None
+        # else:
+        #     self.loop = asyncio.new_event_loop()
+        #     asyncio.set_event_loop(self.loop)
+
+        # try:
+        #     event_loop.run_until_complete(_get_status(self))
+        # finally:
+        #     event_loop.close()
+        self._tasks: set[asyncio.Future[Any]] = set()
 #        self._login()
 
-#    def _login(self):
+    def _login(self):
+        """not required for V2 API"""
 #        password_sha512 = hashlib.sha512(self.password.encode('utf-8')).hexdigest()
 #        req_challenge=requests.get(self.baseurl+'challenge', timeout=self._batteryLoginTimeout)
 #        req_challenge.raise_for_status()
@@ -122,6 +144,19 @@ class sonnenbatterie:
             response.raise_for_status()
         return response
 
+    def async_add_executor_job[*_Ts, _T](
+        self, target: Callable[[*_Ts], _T], *args: *_Ts
+    ) -> asyncio.Future[_T]:
+        """Add an executor job from within the event loop."""
+        task = self.loop.run_in_executor(None, target, *args)
+
+        tracked = asyncio.current_task() in self._tasks
+        task_bucket = self._tasks #if tracked else self._background_tasks
+        task_bucket.add(task)
+        task.add_done_callback(task_bucket.remove)
+
+        return task
+
     # these are special purpose endpoints, there is no associated data that I'm aware of
     # while I don't have details I belive this is probabaly only useful in manual more
     # and it's probabaly possible to extact the actuall flow rate in operation
@@ -164,12 +199,23 @@ class sonnenbatterie:
     #    return self._get(SONNEN_API_PATH_SYSTEM_DATA)
         return systemdata
 
+    async def async_get_batterysystem(self)-> Union[str, bool]:
+        """battery_system not in V2 - fake it for required component attributes"""
+        configurations_data = await self.async_add_executor_job(
+            self.batterie.fetch_configurations #get_configurations
+        )
+        print(f'configs: {configurations_data}')
+        return self._batterysystem_data(configurations_data)
+
     def get_batterysystem(self)-> Union[str, bool]:
         """battery_system not in V2 - fake it for required component attributes"""
 
         configurations_data = self.batterie.get_configurations()
         if configurations_data is None:
             return None
+        return self._batterysystem_data(configurations_data)
+
+    def _batterysystem_data(self, configurations_data: Dict)-> Union[str, bool]:
         systemdata = {'modules':
                         configurations_data.get('IC_BatteryModules'),
                         'battery_system':
@@ -225,10 +271,17 @@ class sonnenbatterie:
     #    return self._get(SONNEN_API_PATH_LATEST_DATA)
         return self.batterie.get_latest_data()
 
+    async def aync_get_configurations(self):
+    #    return self._get(SONNEN_API_PATH_CONFIGURATIONS)
+        configurations = await self.async_add_executor_job(
+            self.batterie.get_configurations
+        )
+        print(f'configs: {configurations}')
+        return configurations
+
     def get_configurations(self):
     #    return self._get(SONNEN_API_PATH_CONFIGURATIONS)
         return self.batterie.get_configurations()
-
     def get_configuration(self, name):
     #    return self._get(SONNEN_API_PATH_CONFIGURATIONS+"/"+name).get(name)
         return self.batterie.get_configurations().get(name)
