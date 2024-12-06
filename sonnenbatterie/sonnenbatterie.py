@@ -146,14 +146,15 @@ class sonnenbatterie:
 
     def async_add_executor_job[*_Ts, _T](
         self, target: Callable[[*_Ts], _T], *args: *_Ts
-    ) -> asyncio.Future[_T]:
+        ) -> asyncio.Future[_T]:
         """Add an executor job from within the event loop."""
+        self.loop = asyncio.get_running_loop()
         task = self.loop.run_in_executor(None, target, *args)
 
-        tracked = asyncio.current_task() in self._tasks
-        task_bucket = self._tasks #if tracked else self._background_tasks
-        task_bucket.add(task)
-        task.add_done_callback(task_bucket.remove)
+#        tracked = asyncio.current_task() in self._tasks
+#        task_bucket = self._tasks #if tracked else self._background_tasks
+        # self._tasks.add(task)
+        # task.add_done_callback(self._tasks.remove)
 
         return task
 
@@ -201,21 +202,27 @@ class sonnenbatterie:
 
     async def async_get_batterysystem(self)-> Union[str, bool]:
         """battery_system not in V2 - fake it for required component attributes"""
+        # if self.loop is None:
+        #     batterysystem_data = self.get_batterysystem()
+        # else:
         configurations_data = await self.async_add_executor_job(
-            self.batterie.fetch_configurations #get_configurations
+            self.batterie.sync_fetch_configurations #get_configurations
         )
-        print(f'configs: {configurations_data}')
-        return self._batterysystem_data(configurations_data)
+        batterysystem_data = self._batterysystem_data(configurations_data)
+        print(f'configsA: {configurations_data}')
+        return batterysystem_data
 
     def get_batterysystem(self)-> Union[str, bool]:
         """battery_system not in V2 - fake it for required component attributes"""
 
         configurations_data = self.batterie.get_configurations()
+        print(f'configsB: {configurations_data}')
         if configurations_data is None:
             return None
         return self._batterysystem_data(configurations_data)
 
     def _batterysystem_data(self, configurations_data: Dict)-> Union[str, bool]:
+        print(f'type: {type(configurations_data)}  configs: {configurations_data}')
         systemdata = {'modules':
                         configurations_data.get('IC_BatteryModules'),
                         'battery_system':
@@ -226,7 +233,6 @@ class sonnenbatterie:
                                 'depthofdischargelimit': configurations_data.get('DepthOfDischargeLimit'),
                             }
                         }
-
                     }
         return systemdata
 
