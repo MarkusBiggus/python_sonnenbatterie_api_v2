@@ -146,8 +146,9 @@ async def test_batterie_emulator_ha(mocker):
     mocker.patch.object(sonnenbatterie, "check_status", AsyncMock(return_value=__mock_status_charging()))
     _battery = sonnenbatterie("", 'fakeToken', 'fakeHost')
 
+    #can't mock a coroutine !!!!!!!!!!!!!!!!!!!!
     mocker.patch.object(Batterie, "fetch_configurations", AsyncMock(return_value=__mock_configurations()))
-    mocker.patch.object(Batterie, "sync_fetch_configurations", AsyncMock(return_value=__mock_configurations()))
+    mocker.patch.object(Batterie, "get_configurations", AsyncMock(return_value=__mock_configurations()))
     mocker.patch.object(Batterie, "fetch_status", AsyncMock(return_value=__mock_status_charging()))
     mocker.patch.object(Batterie, "fetch_latest_details", AsyncMock(return_value=__mock_latest_charging()))
     mocker.patch.object(Batterie, "fetch_powermeter", AsyncMock(return_value=__mock_powermeter()))

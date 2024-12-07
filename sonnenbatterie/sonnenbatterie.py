@@ -149,7 +149,10 @@ class sonnenbatterie:
         ) -> asyncio.Future[_T]:
         """Add an executor job from within the event loop."""
         self.loop = asyncio.get_running_loop()
+    #    return await  self.loop.run_in_executor(None, target, *args)
         task = self.loop.run_in_executor(None, target, *args)
+        print (f'task type: {type(task)}')
+    #    task = self.loop.create_task(target(), *args)
 
 #        tracked = asyncio.current_task() in self._tasks
 #        task_bucket = self._tasks #if tracked else self._background_tasks
@@ -208,6 +211,8 @@ class sonnenbatterie:
         configurations_data = await self.async_add_executor_job(
             self.batterie.sync_fetch_configurations #get_configurations
         )
+        print (f'data type: {type(configurations_data)}')
+
         batterysystem_data = self._batterysystem_data(configurations_data)
         print(f'configsA: {configurations_data}')
         return batterysystem_data
