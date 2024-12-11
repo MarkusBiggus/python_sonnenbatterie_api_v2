@@ -1,7 +1,7 @@
-"""Verify package sonnenbatterie V2 API used by sonnenbatterie component works."""
-"""pytest test/test_battery_devinfo.py -s -v -x """
+"""Verify package sonnenbatterie V2 API used by sonnenbatterie component works.
+    pytest test/test_battery_devinfo.py -s -v -x """
 import os
-import pytest
+#import pytest
 
 from dotenv import load_dotenv
 from sonnenbatterie import sonnenbatterie

@@ -1,7 +1,7 @@
 """Process the time of use schedule stuff"""
 from datetime import time, datetime
 from typing import List
-
+import json
 
 ATTR_TOU_START="start"
 ATTR_TOU_STOP="stop"
@@ -23,7 +23,7 @@ class timeofuse:
     def __eq__(self, other) -> bool :
         if not isinstance(other, type(self)):
             return False
-        return (self.start_time == other.start_time) and (self.stop_time == other.stop_time) and (self.max_power == other.max_power) 
+        return (self.start_time == other.start_time) and (self.stop_time == other.stop_time) and (self.max_power == other.max_power)
 
     def __hash__(self) -> int:
         return hash(self.start_time) ^ hash(self.stop_time) ^ hash(self.max_power)
@@ -39,14 +39,14 @@ class timeofuse:
         stop_string=tmp_stop_time.strftime(TIME_FORMAT)
         max_power_string = str(self.max_power)
         return {ATTR_TOU_START:start_string, ATTR_TOU_STOP:stop_string, ATTR_TOU_MAX_POWER:max_power_string}
-    
+
     def get_as_string(self) -> str:
         resp = "Start "+self.get_start_time_as_string()+", End "+self.get_stop_time_as_string(), "Max allowable power "+str(self.get_max_power())
-        return resp 
+        return resp
 
     def get_start_time_as_string(self) -> str:
         return self._get_time_as_string(self.start_time)
-    
+
     def get_stop_time_as_string(self) -> str:
         tmp_stop_time = self.stop_time
         # previously we had to munge midnight as an stop time to 23:59:59.999999
@@ -54,13 +54,13 @@ class timeofuse:
         if (tmp_stop_time == time.max):
             tmp_stop_time = MIDNIGHT
         return self._get_time_as_string(tmp_stop_time)
-    
+
     def _get_time_as_string(self, timeobj:time) -> str:
         return timeobj.strftime(TIME_FORMAT)
-    
+
     def get_max_power(self) -> int:
         return self.max_power
-    
+
     def from_tou(tou):
         # parse it out
         start_time = datetime.strptime(tou.get(ATTR_TOU_START), TIME_FORMAT).time()
@@ -68,33 +68,33 @@ class timeofuse:
         max_power= int(tou.get(ATTR_TOU_MAX_POWER))
         # build the resulting object
         return timeofuse(start_time, stop_time, max_power)
-    
+
     def is_overlapping(self, other):
         # is our start time within the others time window ?
         if (self.start_time>= other.start_time) and (self.start_time<= other.stop_time):
             return True
-        
+
         # is our end time within the others time window ?
         if (self.stop_time>= other.start_time) and (self.stop_time<= other.stop_time):
             return True
-        
+
 
         # is it's start time within the out time window ?
         if (other.start_time>= self.start_time) and (other.start_time<= self.stop_time):
             return True
-        
+
         # is it's end time within the out time window ?
         if (other.stop_time>= self.start_time) and (other.stop_time<= self.stop_time):
             return True
-        
+
         # no overlap
         return False
-    
+
     def create_time_of_use_entry(start_hour=23, start_min=30, stop_hour=5, stop_min=30, max_power=20000):
         start_time = time(hour=start_hour, minute=start_min)
-        stop_time = time(hour=stop_hour, minute=stop_min) 
+        stop_time = time(hour=stop_hour, minute=stop_min)
         return timeofuse(start_time, stop_time, int(max_power))
-    
+
 class timeofuseschedule:
     def __init__(self):
         self._schedule_entries = []
@@ -144,18 +144,18 @@ class timeofuseschedule:
         for i in self._schedule_entries :
             schedules.append(i.get_as_tou())
         return schedules
-    
+
     def get_as_string(self) -> str:
         result = ""
-        doneFirst = False 
+        doneFirst = False
         for entry in self._schedule_entries :
             if (doneFirst) :
                 result = result +","
             else :
-                doneFirst = True 
+                doneFirst = True
             result = result + str(entry.get_as_string())
-        return result 
-    
+        return result
+
     # retained fore compatibility purposed, is not just a wrapper roung  def load_tou_schedule
     def load_tou_schedule(self, schedcule):
         self.load_tou_schedule_from_json(schedcule)
@@ -167,21 +167,22 @@ class timeofuseschedule:
             tou_entry = timeofuse.from_tou(entry)
             self.add_entry(tou_entry)
 
-    # create a new timeofuseschedule with the provided array ofdictionary data
-    def build_from_json(json_schedule) :
+    # create a new timeofuseschedule with the provided array of dictionary data
+    def build_from_json(json_schedule):
+        schedule = json.loads(json_schedule) if type(json_schedule) is str else json_schedule
         tous = timeofuseschedule()
-        for entry in json_schedule:
+        for entry in schedule: #json_schedule:
             tou_entry = timeofuse.from_tou(entry)
             tous.add_entry(tou_entry)
         return tous
-    
+
     def entry_count(self) -> int:
         return len(self._schedule_entries)
 
-    
+
     def get_tou_entry_count(self) -> int:
         return len(self._schedule_entries)
-    
+
     def get_tou_entry(self, i:int) -> timeofuse:
         entrties = self.get_tou_entry_count()
         if (i > entrties):
@@ -192,7 +193,7 @@ class timeofuseschedule:
     def __eq__(self, other) -> bool:
         if not isinstance(other, type(self)):
             return False
-        myEntryCount = self.entry_count() 
+        myEntryCount = self.entry_count()
         otherEntryCount = other.entry_count()
         # if there both zero length by definition they are equal
         if (myEntryCount == 0) and (otherEntryCount==0):
@@ -208,13 +209,13 @@ class timeofuseschedule:
                 return False
         # got to the end of the individual timeofuse entries and they arew all equal so ...
         return True
-    
+
     def __hash__(self) -> int:
         myHash = 0
-        myEntryCount = self.entry_count() 
+        myEntryCount = self.entry_count()
         for i in range(0, myEntryCount):
             myTou = self.get_tou_entry(i)
-            myTouHash = hash(myTou) 
+            myTouHash = hash(myTou)
             # adjust the hash based on the position in the order to allow for things in a differing order
             myHash = myHash ^ (myTouHash + i)
         return myHash

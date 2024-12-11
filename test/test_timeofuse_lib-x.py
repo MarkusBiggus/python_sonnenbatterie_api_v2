@@ -5,14 +5,14 @@ import os, sys, json
 script_path = os.path.realpath(os.path.dirname(__name__))
 os.chdir(script_path)
 sys.path.append("..")
-from login import *
+#from login import *
 from pprint import pprint
 from sonnenbatterie.timeofuse import timeofuse, timeofuseschedule
 
 problemHit = False
 problemsList = ""
 def doTest(description:str, test, expectedResult):
-    actualResult = test() 
+    actualResult = test()
     if (expectedResult == actualResult) :
         print (description+" achieved expected result of "+str(actualResult))
     else :
@@ -26,7 +26,7 @@ def doTest(description:str, test, expectedResult):
         problemsList = problemsList + "\n"+problemStr
 
 if (__name__ == '__main__'):
-    tous = timeofuseschedule()  
+    tous = timeofuseschedule()
     print("\nEmpty schedule")
     pprint(tous.get_as_tou_schedule())
     tou=timeofuse.create_time_of_use_entry()
@@ -80,7 +80,7 @@ if (__name__ == '__main__'):
 
     print ("\nBuilding based on returned entry")
     old_schedule = tous.get_as_tou_schedule()
-    tous = timeofuseschedule() 
+    tous = timeofuseschedule()
     tous.load_tou_schedule(old_schedule)
 
     print("\nAfter schedule load")
@@ -114,7 +114,7 @@ if (__name__ == '__main__'):
     doTest("Compare nine to midday with ten to eleven ", lambda:touNineToMidday == touTenToEleven, False)
     doTest("Compare ten to eleven with ten to eleven max power ", lambda: touTenToEleven == touTouTenToElevenMaxPower , False)
 
-    
+
     firstEmptyTous = timeofuseschedule()
     secondEmptyTous = timeofuseschedule()
 
@@ -162,36 +162,36 @@ if (__name__ == '__main__'):
 
 
     print("Testing multiple entry time of use schedule hashes")
-    morningTou = timeofuse.create_time_of_use_entry(9,0,10,0) 
-    afternoonTou = timeofuse.create_time_of_use_entry(13,0,15,0) 
-    eveningTou = timeofuse.create_time_of_use_entry(21,0,22,0) 
-    nightTou = timeofuse.create_time_of_use_entry(1,30,3,40) 
+    morningTou = timeofuse.create_time_of_use_entry(9,0,10,0)
+    afternoonTou = timeofuse.create_time_of_use_entry(13,0,15,0)
+    eveningTou = timeofuse.create_time_of_use_entry(21,0,22,0)
+    nightTou = timeofuse.create_time_of_use_entry(1,30,3,40)
     overMidnightTou = timeofuse.create_time_of_use_entry(23,30,5,30)
     uptoMidnightTou = timeofuse.create_time_of_use_entry(23,30,0,0)
     afterMidnightTou = timeofuse.create_time_of_use_entry(0,0,5, 30)
 
-    tousMorningAfternoon = timeofuseschedule() 
+    tousMorningAfternoon = timeofuseschedule()
     tousMorningAfternoon.add_entry(morningTou)
     tousMorningAfternoon.add_entry(afternoonTou)
-    tousFirstMorningAfternoonEveningNight = timeofuseschedule() 
+    tousFirstMorningAfternoonEveningNight = timeofuseschedule()
     tousFirstMorningAfternoonEveningNight.add_entry(morningTou)
     tousFirstMorningAfternoonEveningNight.add_entry(afternoonTou)
     tousFirstMorningAfternoonEveningNight.add_entry(eveningTou)
     tousFirstMorningAfternoonEveningNight.add_entry(nightTou)
-    tousSecondMorningAfternoonEveningNight = timeofuseschedule() 
+    tousSecondMorningAfternoonEveningNight = timeofuseschedule()
     tousSecondMorningAfternoonEveningNight.add_entry(morningTou)
     tousSecondMorningAfternoonEveningNight.add_entry(afternoonTou)
     tousSecondMorningAfternoonEveningNight.add_entry(eveningTou)
     tousSecondMorningAfternoonEveningNight.add_entry(nightTou)
-    tousAfternoonMorning = timeofuseschedule() 
+    tousAfternoonMorning = timeofuseschedule()
     tousAfternoonMorning.add_entry(afternoonTou)
     tousAfternoonMorning.add_entry(morningTou)
-    tousAfternoonEvening = timeofuseschedule() 
+    tousAfternoonEvening = timeofuseschedule()
     tousAfternoonEvening.add_entry(afternoonTou)
     tousAfternoonEvening.add_entry(eveningTou)
-    tousOvernight = timeofuseschedule() 
+    tousOvernight = timeofuseschedule()
     tousOvernight.add_entry(overMidnightTou)
-    tousUptoAfterMidnight =  timeofuseschedule() 
+    tousUptoAfterMidnight =  timeofuseschedule()
     tousUptoAfterMidnight.add_entry(uptoMidnightTou)
     tousUptoAfterMidnight.add_entry(afterMidnightTou)
 

@@ -24,6 +24,10 @@ TIMEOUT_REQUEST=1
 
 class sonnenbatterie:
     def __init__(self, username, token, ipaddress) -> None:
+        """Expect to be in a running asyncio loop now.
+            Condition of HA custom_component.coordinator _async_update_data()
+            that instantiates this class
+        """
 #        self.username=username
         self.token=token
         self.ipaddress=ipaddress
@@ -34,21 +38,28 @@ class sonnenbatterie:
 #        self._batteryReadTimeout = DEFAULT_READ_FROM_BATTERY_TIMEOUT
 #        self._batteryRequestTimeout = (self._batteryConnectTimeout, self._batteryReadTimeout)
         self._batteryRequestTimeout = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
+        self.configurations = None
         self.batterie = Batterie(self.token, self.ipaddress)
-        batterie_status = self.check_status(self)
-        if batterie_status is False:
-            LOGGER.error('Unable to connect to sonnenbatterie!')
-            raise BatterieError('Unable to connect to sonnenbatterie!')
+        # Expect to be in a running loop now
+
+
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        # batterie_status = await self.get_configurations() # cache configurations in Batterie
+        # if batterie_status is False:
+        #     LOGGER.error('Unable to connect to sonnenbatterie!')
+        #     raise BatterieError('Unable to connect to sonnenbatterie!')
 
 #        batterie_status = await self.batterie.fetch_status #get_status()
 #        if batterie_status is None:
         self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
         self._battery_serial_number = 'unknown' #os.getenv("BATTERIE_SN", "unknown")
         self._battery_model = 'unknown' #os.getenv("BATTERIE_MODEL", "unknown")
-        try:
-            self.loop = asyncio.get_running_loop()
-        except RuntimeError:  # no event loop running:
-            self.loop = None
+        # try:
+        #     self.loop = asyncio.get_running_loop()
+        # except RuntimeError:  # no event loop running:
+        #     self.loop = None
         # else:
         #     self.loop = asyncio.new_event_loop()
         #     asyncio.set_event_loop(self.loop)
@@ -57,7 +68,7 @@ class sonnenbatterie:
         #     event_loop.run_until_complete(_get_status(self))
         # finally:
         #     event_loop.close()
-        self._tasks: set[asyncio.Future[Any]] = set()
+#        self._tasks: set[asyncio.Future[Any]] = set()
 #        self._login()
 
     def _login(self):
@@ -78,10 +89,6 @@ class sonnenbatterie:
         #print(token)
 #        self.token=token
 
-    def check_status(self):
-        # needed for mock
-        return self.batterie.get_status()
-
     def set_login_timeout(self, timeout:int = 120):
         # not used by wrapper
         self._batteryLoginTimeout = timeout
@@ -91,14 +98,14 @@ class sonnenbatterie:
 
     def set_request_connect_timeout(self, timeout:int = 60):
         self._batteryRequestTimeout = (timeout, self._batteryRequestTimeout[TIMEOUT_REQUEST])
-        self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
+        return self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
 
     def get_request_connect_timeout(self) -> int:
         return self._batteryRequestTimeout[TIMEOUT_CONNECT]
 
     def set_request_read_timeout(self, timeout:int = 60):
         self._batteryRequestTimeout = (self._batteryRequestTimeout[TIMEOUT_CONNECT], timeout)
-        self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
+        return self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
 
     def get_request_read_timeout(self) -> int:
         return self._batteryRequestTimeout[TIMEOUT_REQUEST]
@@ -149,16 +156,7 @@ class sonnenbatterie:
         ) -> asyncio.Future[_T]:
         """Add an executor job from within the event loop."""
         self.loop = asyncio.get_running_loop()
-    #    return await  self.loop.run_in_executor(None, target, *args)
         task = self.loop.run_in_executor(None, target, *args)
-        print (f'task type: {type(task)}')
-    #    task = self.loop.create_task(target(), *args)
-
-#        tracked = asyncio.current_task() in self._tasks
-#        task_bucket = self._tasks #if tracked else self._background_tasks
-        # self._tasks.add(task)
-        # task.add_done_callback(self._tasks.remove)
-
         return task
 
     # these are special purpose endpoints, there is no associated data that I'm aware of
@@ -185,49 +183,76 @@ class sonnenbatterie:
         payload = {str(name): str(value)}
         return self._put(SONNEN_API_PATH_CONFIGURATIONS, payload)
 
-    def get_powermeter(self):
+    async def get_configurations(self):
+        """Cache configurations - reused by many other methods
+        """
+    #    return self._get(SONNEN_API_PATH_CONFIGURATIONS)
+        if self.configurations is None:
+            self.configurations = await self.async_add_executor_job(
+                self.batterie.sync_get_configurations
+            )
+        return self.configurations
+
+    async def get_configuration(self, name):
+    #    return self._get(SONNEN_API_PATH_CONFIGURATIONS+"/"+name).get(name)
+        if self.configurations is None:
+            await self.get_configurations()
+
+        return self.configurations.get(name)
+
+    async def get_status(self):
+    #    return self._get(SONNEN_API_PATH_STATUS)
+        status_data = await self.async_add_executor_job(
+            self.batterie.sync_get_status
+        )
+        return status_data
+
+    # def sync_get_status(self):
+    #     return  self.batterie.get_status()
+
+    async def get_powermeter(self):
     #    return self._get(SONNEN_API_PATH_POWER_METER)
-        return self.batterie.get_powermeter()
+        return await self.async_add_executor_job(
+            self.batterie.sync_get_powermeter
+        )
 
-    def get_inverter(self):
+    async def get_inverter(self):
     #    return self._get(SONNEN_API_PATH_INVERTER)
-        return self.batterie.get_inverter()
+        return await self.async_add_executor_job(
+            self.batterie.sync_get_inverter
+        )
 
-    def get_systemdata(self):
+    async def get_systemdata(self):
         '''system_data not in V2 - fake it for required component attributes'''
-        configurations = self.batterie.get_configurations()
-        systemdata = {'software_version': configurations.get("DE_Software"),
+    #    return self._get(SONNEN_API_PATH_SYSTEM_DATA)
+        await self.get_configurations()
+        systemdata = {'software_version': self.configurations.get("DE_Software"),
                       'ERP_ArticleName': self._battery_model,
                       'DE_Ticket_Number': self._battery_serial_number
                     }
-    #    return self._get(SONNEN_API_PATH_SYSTEM_DATA)
         return systemdata
 
-    async def async_get_batterysystem(self)-> Union[str, bool]:
+    async def get_batterysystem(self)-> Union[str, bool]:
         """battery_system not in V2 - fake it for required component attributes"""
-        # if self.loop is None:
-        #     batterysystem_data = self.get_batterysystem()
-        # else:
-        configurations_data = await self.async_add_executor_job(
-            self.batterie.sync_fetch_configurations #get_configurations
+        configurations = await self.async_add_executor_job(
+            self.batterie.sync_get_configurations
         )
-        print (f'data type: {type(configurations_data)}')
-
-        batterysystem_data = self._batterysystem_data(configurations_data)
-        print(f'configsA: {configurations_data}')
+        #print (f'data type: {type(configurations_data)}')
+        batterysystem_data = self._aug_batterysystem_data(configurations)
+        #print(f'configsA: {configurations_data}')
         return batterysystem_data
 
-    def get_batterysystem(self)-> Union[str, bool]:
-        """battery_system not in V2 - fake it for required component attributes"""
+    # def sync_get_batterysystem(self)-> Union[str, bool]:
+    #     """battery_system not in V2 - fake it for required component attributes"""
+    #     configurations_data = self.batterie.get_configurations()
+    #     #print(f'configsB: {configurations_data}')
+    #     if configurations_data is None:
+    #         return None
+    #     return self._aug_batterysystem_data(configurations_data)
 
-        configurations_data = self.batterie.get_configurations()
-        print(f'configsB: {configurations_data}')
-        if configurations_data is None:
-            return None
-        return self._batterysystem_data(configurations_data)
-
-    def _batterysystem_data(self, configurations_data: Dict)-> Union[str, bool]:
-        print(f'type: {type(configurations_data)}  configs: {configurations_data}')
+    def _aug_batterysystem_data(self, configurations_data: Dict)-> Union[str, bool]:
+        """Augment battery_system data for V1 compatibility"""
+    #    print(f'type: {type(configurations_data)}  configs: {configurations_data}')
         systemdata = {'modules':
                         configurations_data.get('IC_BatteryModules'),
                         'battery_system':
@@ -241,20 +266,18 @@ class sonnenbatterie:
                     }
         return systemdata
 
-    def get_status(self):
-    #    return self._get(SONNEN_API_PATH_STATUS)
-        return self.batterie.get_status()
-
-    def get_battery(self):
+    async def get_battery(self):
         """Battery status for sonnenbatterie wrapper
             Fake V1 API data used by ha sonnenbatterie component
             Returns:
                 json response
         """
     #    return self._get(SONNEN_API_PATH_BATTERY)
-        battery_status = self.batterie.get_battery()
+        battery_status = await self.async_add_executor_job(
+            self.batterie.sync_get_battery
+        )
 
-        configurations_data = self.batterie.get_configurations()
+        configurations_data = await self.get_configurations()
         if configurations_data is None:
             return None
 
@@ -278,78 +301,79 @@ class sonnenbatterie:
 
         return battery_status
 
-    def get_latest_data(self):
+    async def get_latest_data(self):
     #    return self._get(SONNEN_API_PATH_LATEST_DATA)
-        return self.batterie.get_latest_data()
-
-    async def aync_get_configurations(self):
-    #    return self._get(SONNEN_API_PATH_CONFIGURATIONS)
-        configurations = await self.async_add_executor_job(
-            self.batterie.get_configurations
+        return await self.async_add_executor_job(
+            self.batterie.sync_get_latest_data
         )
-        print(f'configs: {configurations}')
-        return configurations
 
-    def get_configurations(self):
-    #    return self._get(SONNEN_API_PATH_CONFIGURATIONS)
-        return self.batterie.get_configurations()
-    def get_configuration(self, name):
-    #    return self._get(SONNEN_API_PATH_CONFIGURATIONS+"/"+name).get(name)
-        return self.batterie.get_configurations().get(name)
+    # async def aync_get_configurations(self):
+    # #    return self._get(SONNEN_API_PATH_CONFIGURATIONS)
+    #     configurations = await self.async_add_executor_job(
+    #         self.batterie.get_configurations
+    #     )
+    #     print(f'configs: {configurations}')
+    #     return configurations
 
     # these have special handling in some form, for example converting a mode as a number into a string
-    def get_current_charge_level(self):
+    async def get_current_charge_level(self):
     #    return self.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
-        return self.batterie.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
+        latest_data = await self.get_latest_data()
+        return latest_data.get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
 
     def get_operating_mode(self):
-        return self.get_configuration(SONNEN_CONFIGURATION_OPERATING_MODE)
+        return self.batterie.configuration_em_operatingmode #get_configuration(SONNEN_CONFIGURATION_OPERATING_MODE)
 
     def get_operating_mode_name(self):
-        operating_mode_num = self.get_operating_mode()
-        return SONNEN_OPERATING_MODES_TO_OPERATING_MODE_NAMES.get(operating_mode_num)
+    #    operating_mode_num = self.get_operating_mode()
+        return self.batterie.configuration_em_operatingmode_name  #SONNEN_OPERATING_MODES_TO_OPERATING_MODE_NAMES.get(operating_mode_num)
 
-    def set_operating_mode(self, operating_mode):
-        return self.set_configuration(SONNEN_CONFIGURATION_OPERATING_MODE, operating_mode)
+    # def set_operating_mode(self, operating_mode):
+    #     return self.set_configuration(SONNEN_CONFIGURATION_OPERATING_MODE, operating_mode)
 
-    def set_operating_mode_by_name(self, operating_mode_name):
-        return self.set_operating_mode(SONNEN_OPERATING_MODE_NAMES_TO_OPERATING_MODES.get(operating_mode_name))
+    # def set_operating_mode_by_name(self, operating_mode_name):
+    #     return self.set_operating_mode(SONNEN_OPERATING_MODE_NAMES_TO_OPERATING_MODES.get(operating_mode_name))
 
     def get_battery_reserve(self):
-        return self.get_configuration(SONNEN_CONFIGURATION_BACKUP_RESERVE)
+        return self.batterie.configuration_em_usoc #get_configuration(SONNEN_CONFIGURATION_BACKUP_RESERVE)
 
-    def set_battery_reserve(self, reserve=5):
-        reserve = int(reserve)
-        if (reserve < 0) or (reserve > 100):
-            raise Exception("Reserve must be between 0 and 100, you specified "+reserve)
-        return self.set_configuration(SONNEN_CONFIGURATION_BACKUP_RESERVE, reserve)
+    # def set_battery_reserve(self, reserve=5):
+    #     reserve = int(reserve)
+    #     if (reserve < 0) or (reserve > 100):
+    #         raise Exception("Reserve must be between 0 and 100, you specified "+reserve)
+    #     return self.set_configuration(SONNEN_CONFIGURATION_BACKUP_RESERVE, reserve)
 
     # set the reserve to the current battery level adjusted by the offset if provided
     # (a positive offset means that the reserve will be set to more than the current level
     # a negative offser means less than the current level)
     # If the new reserve is less than the minimum reserve then use the minimum reserve
     # the reserve will be tested to ensure it's >= 0 or <= 100
-    def set_battery_reserve_relative_to_currentCharge(self, offset=0, minimum_reserve=0):
-        current_level = self.get_current_charge_level()
-        target_level = current_level +offset
-        if (target_level <  minimum_reserve):
-            target_level = minimum_reserve
-        if (target_level < 0) :
-            target_level = 0
-        elif (target_level > 100):
-            target_level = 100
-        return self.set_battery_reserve(target_level)
 
-    def get_time_of_use_schedule_as_string(self):
-        return self.get_configuration(SONNEN_CONFIGURATION_TOU_SCHEDULE)
+    # def set_battery_reserve_relative_to_currentCharge(self, offset=0, minimum_reserve=0):
+    #     current_level = self.get_current_charge_level()
+    #     target_level = current_level +offset
+    #     if (target_level <  minimum_reserve):
+    #         target_level = minimum_reserve
+    #     if (target_level < 0) :
+    #         target_level = 0
+    #     elif (target_level > 100):
+    #         target_level = 100
+    #     return self.set_battery_reserve(target_level)
 
-    def get_time_of_use_schedule_as_json_objects(self):
-        return json.loads(self.get_configuration(SONNEN_CONFIGURATION_TOU_SCHEDULE))
+    async def get_time_of_use_schedule_as_string(self):
+        """Config param is a <List>
+            Return:
+                JSON string of the List
+        """
+        return json.dumps(await self.get_configuration(SONNEN_CONFIGURATION_TOU_SCHEDULE))
 
-    def get_time_of_use_schedule_as_schedule(self)-> timeofuseschedule:
-        current_schedule = self.get_time_of_use_schedule_as_json_objects()
+    async def get_time_of_use_schedule_as_json_objects(self):
+        return json.loads(await self.get_time_of_use_schedule_as_string())
+
+    async def get_time_of_use_schedule_as_schedule(self)-> timeofuseschedule:
+        current_schedule = await self.get_configuration(SONNEN_CONFIGURATION_TOU_SCHEDULE) #is List
         return timeofuseschedule.build_from_json(current_schedule)
 
     # In this case the schedule is a array representation of an array of dictionary formatted time of use entries, each entry has a start time and stop time and a threshold_p_max (max grid power for the entire building including charging)
-    def set_time_of_use_schedule_from_json_objects(self, schedule):
-        return self.set_configuration(SONNEN_CONFIGURATION_TOU_SCHEDULE, json.dumps(schedule))
+    # async def set_time_of_use_schedule_from_json_objects(self, schedule):
+    #     return self.set_configuration(SONNEN_CONFIGURATION_TOU_SCHEDULE, json.dumps(schedule))
