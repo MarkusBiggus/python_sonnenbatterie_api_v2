@@ -141,15 +141,8 @@ async def test_batterie_emulator_ha(battery_charging_ha: sonnenbatterie):
     latestData = {}
 
     latestData["battery_system"] = await battery_charging_ha.get_batterysystem()
-    # async_add_executor_job(
-    #         target=battery_charging_ha.get_batterysystem
-    #     )
-    print(f'battery_system type: {type(latestData["battery_system"])} {latestData["battery_system"]}')
 
     latestData["status"] = await battery_charging_ha.get_status()
-    # async_add_executor_job(self,
-    #         target=battery_charging_ha.get_status
-    #     )
     print(f'status type: {type(latestData["status"])} {latestData["status"]}')
 
     batt_module_capacity = int(
@@ -162,11 +155,7 @@ async def test_batterie_emulator_ha(battery_charging_ha: sonnenbatterie):
 
     # from sonnenbatterie ha component coordinator
     batt_reserved_factor = 7.0
-#    latestData["battery_info"] = {}
     latestData["battery_info"] = await battery_charging_ha.get_battery()
-    # async_add_executor_job(
-    #         battery_charging_ha.get_battery
-    #     )
     latestData["battery_info"][
         "total_installed_capacity"
     ] = total_installed_capacity = int(batt_module_count * batt_module_capacity)
@@ -180,30 +169,10 @@ async def test_batterie_emulator_ha(battery_charging_ha: sonnenbatterie):
         0, int(remaining_capacity - reserved_capacity)
     )
 
-    # if latestData["status"]["BatteryCharging"]:
-    #     battery_current_state = "charging"
-    # elif latestData["status"]["BatteryDischarging"]:
-    #     battery_current_state = "discharging"
-    # elif latestData["status"]["RSOC"] > 98:
-    #     battery_current_state = "charged"
-    # elif remaining_capacity < 2:
-    #     battery_current_state = "discharged"
-    # else:
-    #     battery_current_state = "standby"
-    #latestData["battery_info"]["current_state"] = battery_current_state
     #print(f'battery_info: {latestData["battery_info"]}')
     latestData["powermeter"] = await battery_charging_ha.get_powermeter()
-    # async_add_executor_job(
-    #         battery_charging_ha.get_powermeter
-    #     )
     latestData["inverter"] = await battery_charging_ha.get_inverter()
-    # async_add_executor_job(
-    #         battery_charging_ha.get_inverter
-    #     )
     latestData["system_data"] = await battery_charging_ha.get_systemdata()
-    # async_add_executor_job(
-    #         battery_charging_ha.get_systemdata
-    #     )
 
     assert latestData["battery_info"].get('reserved_capacity') == 1400
     assert latestData["system_data"].get('ERP_ArticleName') == 'unknown' #'Power unit Evo IP56'
@@ -241,4 +210,4 @@ async def test_batterie_emulator_ha(battery_charging_ha: sonnenbatterie):
     #print(f'TOU: schedule_as_json: {time_of_use_schedule_as_json_objects}  type:{type(time_of_use_schedule_as_json_objects)}')
     assert time_of_use_schedule_as_json_objects == []
     time_of_use_schedule_as_schedule = await battery_charging_ha.get_time_of_use_schedule_as_schedule()
-    print(f'TOU: schedule_as_schedule: {time_of_use_schedule_as_schedule}')
+    #print(f'TOU: schedule_as_schedule: {time_of_use_schedule_as_schedule}')

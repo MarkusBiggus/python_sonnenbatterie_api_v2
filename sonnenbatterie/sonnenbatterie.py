@@ -6,11 +6,10 @@ from collections.abc import (
     Callable,
 )
 from typing import (
-    Any,
     Union,
     Dict,
 )
-import requests
+#import requests
 import json
 from .const import *
 from .timeofuse import timeofuseschedule
@@ -51,24 +50,9 @@ class sonnenbatterie:
         #     LOGGER.error('Unable to connect to sonnenbatterie!')
         #     raise BatterieError('Unable to connect to sonnenbatterie!')
 
-#        batterie_status = await self.batterie.fetch_status #get_status()
-#        if batterie_status is None:
         self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
         self._battery_serial_number = 'unknown' #os.getenv("BATTERIE_SN", "unknown")
         self._battery_model = 'unknown' #os.getenv("BATTERIE_MODEL", "unknown")
-        # try:
-        #     self.loop = asyncio.get_running_loop()
-        # except RuntimeError:  # no event loop running:
-        #     self.loop = None
-        # else:
-        #     self.loop = asyncio.new_event_loop()
-        #     asyncio.set_event_loop(self.loop)
-
-        # try:
-        #     event_loop.run_until_complete(_get_status(self))
-        # finally:
-        #     event_loop.close()
-#        self._tasks: set[asyncio.Future[Any]] = set()
 #        self._login()
 
     def _login(self):
@@ -124,32 +108,32 @@ class sonnenbatterie:
 
     #     return response.json()
 
-    def _put(self, what, payload, isretry=False):
-        # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
-        url = self.baseurl+what
-        response=requests.put(url,
-            headers={'Auth-Token': self.token,'Content-Type': 'application/json'} , json=payload, timeout=self._batteryRequestTimeout
-        )
-        if not isretry and response.status_code == 401:
-            self._login()
-            return self._put(what, payload,True)
-        if response.status_code != 200:
-            response.raise_for_status()
-        return response.json()
+    # def _put(self, what, payload, isretry=False):
+    #     # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
+    #     url = self.baseurl+what
+    #     response=requests.put(url,
+    #         headers={'Auth-Token': self.token,'Content-Type': 'application/json'} , json=payload, timeout=self._batteryRequestTimeout
+    #     )
+    #     if not isretry and response.status_code == 401:
+    #         self._login()
+    #         return self._put(what, payload,True)
+    #     if response.status_code != 200:
+    #         response.raise_for_status()
+    #     return response.json()
 
-    def _post(self, what, isretry=False):
-        # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
-        url = self.baseurl+what
-        print("Posting "+url)
-        response=requests.post(url,
-            headers={'Auth-Token': self.token,'Content-Type': 'application/json'}, timeout=self._batteryRequestTimeout
-        )
-        if not isretry and response.status_code == 401:
-            self._login()
-            return self._post(what, True)
-        if response.status_code != 200:
-            response.raise_for_status()
-        return response
+    # def _post(self, what, isretry=False):
+    #     # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
+    #     url = self.baseurl+what
+    #     print("Posting "+url)
+    #     response=requests.post(url,
+    #         headers={'Auth-Token': self.token,'Content-Type': 'application/json'}, timeout=self._batteryRequestTimeout
+    #     )
+    #     if not isretry and response.status_code == 401:
+    #         self._login()
+    #         return self._post(what, True)
+    #     if response.status_code != 200:
+    #         response.raise_for_status()
+    #     return response
 
     def async_add_executor_job[*_Ts, _T](
         self, target: Callable[[*_Ts], _T], *args: *_Ts
