@@ -1,4 +1,3 @@
-import os
 import logging
 import pytest
 import asyncio
@@ -40,14 +39,21 @@ async def fixture_battery_charging_ha(mocker) -> sonnenbatterie:
     #    print (f'task type: {type(task)}')
         return task
 
+    def _setup_batterie(_username, _token, _host):
+        """Coroutine to sync instantiation"""
+        return sonnenbatterie(_username, _token, _host)
+
     def _sync_update():
         """Coroutine to sync fetch"""
         return battery_charging.batterie.sync_update()
 
-    battery_charging = sonnenbatterie('fakeToken', 'fakeHost', '80')
-    success = await async_add_executor_job(mocker,
-        target = _sync_update
+    battery_charging:sonnenbatterie = await async_add_executor_job(mocker,
+        _setup_batterie, 'fakeUsername', 'fakeToken', 'fakeHost'
     )
-    assert success is True
+
+    # success = await async_add_executor_job(mocker,
+    #     target = _sync_update
+    # )
+    # assert success is True
 
     return battery_charging

@@ -49,12 +49,17 @@ async def fixture_battery_discharging(mocker) -> Batterie:
     #    print (f'task type: {type(task)}')
         return task
 
+    def _setup_batterie(_token, _host, _port, _logger):
+        """Coroutine to sync instantiation"""
+        return Batterie(_token, _host, _port, _logger)
+
     def _sync_update():
         """Coroutine to sync fetch"""
         return battery_discharging.sync_update()
 
-
-    battery_discharging = Batterie(API_READ_TOKEN_1, BATTERIE_1_HOST, BATTERIE_HOST_PORT, LOGGER_NAME)
+    battery_discharging = await async_add_executor_job(mocker,
+        target = _setup_batterie('fakeToken', 'fakeHost', '80', LOGGER_NAME)
+    )
 
     success = await async_add_executor_job(mocker,
         target = _sync_update

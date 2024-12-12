@@ -52,6 +52,9 @@ async def test_sonnen_package(battery_charging: sonnenbatterie):
     """test to confirm the sonnen_api_v2 package is installed
         and working fully async
     """
+    success = await battery_charging.batterie.async_update()
+    assert success is True
+
     version = battery_charging.batterie.configuration_de_software # mock_configurations
     status = battery_charging.batterie.system_status # latest_charging
     backup_buffer = battery_charging.batterie.status_backup_buffer # status_charging
@@ -90,6 +93,9 @@ async def test_batterie_emulator_mocked(battery_charging: sonnenbatterie):
         Async method calls sync methods in sonnen_api_v2 using
         asyncio.run_in_executor same as sonnenbatterie custom_component
     """
+    success = await battery_charging.batterie.async_update() # get_configurations()
+    assert success is True
+
     #same package tests above via emulator
     version = battery_charging.batterie.configuration_de_software # mock_configurations
     status = battery_charging.batterie.system_status # latest_charging
@@ -130,19 +136,29 @@ async def test_batterie_emulator_ha(battery_charging_ha: sonnenbatterie):
         Emulate ha component use - call sync methods asynchronously via asyncio.run_in_executor
     """
     async def async_add_executor_job[*_Ts, _T](
-        self, target: Callable[[*_Ts], _T], *args: *_Ts
+        target: Callable[[*_Ts], _T], *args: *_Ts
         ) -> asyncio.Future[_T]:
         """Add an executor job from within the event loop."""
-        self.loop = asyncio.get_running_loop()
-        task = self.loop.run_in_executor(None, target, *args)
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, target, *args)
         return task
+
+    success = await async_add_executor_job(
+        target = battery_charging_ha.batterie.sync_update
+    )
+    assert success is True
 
     #emulated methods
     latestData = {}
 
-    latestData["battery_system"] = await battery_charging_ha.get_batterysystem()
+#    latestData["battery_system"] = await battery_charging_ha.get_batterysystem()
+    latestData["battery_system"] =  await async_add_executor_job (
+            battery_charging_ha.get_batterysystem
+    )
 
-    latestData["status"] = await battery_charging_ha.get_status()
+    latestData["status"] = await async_add_executor_job (
+            battery_charging_ha.get_status
+    )
     print(f'status type: {type(latestData["status"])} {latestData["status"]}')
 
     batt_module_capacity = int(
@@ -155,7 +171,9 @@ async def test_batterie_emulator_ha(battery_charging_ha: sonnenbatterie):
 
     # from sonnenbatterie ha component coordinator
     batt_reserved_factor = 7.0
-    latestData["battery_info"] = await battery_charging_ha.get_battery()
+    latestData["battery_info"] = await async_add_executor_job (
+            battery_charging_ha.get_battery
+    )
     latestData["battery_info"][
         "total_installed_capacity"
     ] = total_installed_capacity = int(batt_module_count * batt_module_capacity)
@@ -169,10 +187,17 @@ async def test_batterie_emulator_ha(battery_charging_ha: sonnenbatterie):
         0, int(remaining_capacity - reserved_capacity)
     )
 
-    #print(f'battery_info: {latestData["battery_info"]}')
-    latestData["powermeter"] = await battery_charging_ha.get_powermeter()
-    latestData["inverter"] = await battery_charging_ha.get_inverter()
-    latestData["system_data"] = await battery_charging_ha.get_systemdata()
+    print(f'battery_info state: {latestData["battery_info"].get('current_state')}')
+
+    latestData["powermeter"] = await async_add_executor_job (
+            battery_charging_ha.get_powermeter
+    )
+    latestData["inverter"] = await async_add_executor_job (
+            battery_charging_ha.get_inverter
+    )
+    latestData["system_data"] = await async_add_executor_job (
+            battery_charging_ha.get_systemdata
+    )
 
     assert latestData["battery_info"].get('reserved_capacity') == 1400
     assert latestData["system_data"].get('ERP_ArticleName') == 'unknown' #'Power unit Evo IP56'
