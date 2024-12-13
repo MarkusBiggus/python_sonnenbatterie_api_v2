@@ -50,7 +50,8 @@ async def fixture_battery_charging_ha(mocker) -> sonnenbatterie:
     battery_charging:sonnenbatterie = await async_add_executor_job(mocker,
         _setup_batterie, 'fakeUsername', 'fakeToken', 'fakeHost'
     )
-
+    assert isinstance(battery_charging.batterie, Batterie) is True
+#    print(f'type: {type(battery_charging.batterie)}  class: {Batterie.__class__} inst: {isinstance(battery_charging.batterie, Batterie)}')
     # success = await async_add_executor_job(mocker,
     #     target = _sync_update
     # )

@@ -86,7 +86,7 @@ async def test_sonnen_package(battery_charging: sonnenbatterie):
 
 # ASYNC like ha component
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("battery_charging_ha")
+@pytest.mark.usefixtures("battery_charging")
 async def test_batterie_emulator_mocked(battery_charging: sonnenbatterie):
     """test to confirm the sonnen_api_v2 package is installed
         and working in the environment of ha .
