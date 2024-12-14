@@ -135,7 +135,7 @@ async def test_batterie_emulator_ha(battery_charging_ha: sonnenbatterie):
     """sonnenbatterie_api_v2 package: Batterie charging using mock data
         Emulate ha component use - call sync methods asynchronously via asyncio.run_in_executor
     """
-    async def async_add_executor_job[*_Ts, _T](
+    def async_add_executor_job[*_Ts, _T](
         target: Callable[[*_Ts], _T], *args: *_Ts
         ) -> asyncio.Future[_T]:
         """Add an executor job from within the event loop."""
@@ -159,7 +159,8 @@ async def test_batterie_emulator_ha(battery_charging_ha: sonnenbatterie):
     latestData["status"] = await async_add_executor_job (
             battery_charging_ha.get_status
     )
-    print(f'status type: {type(latestData["status"])} {latestData["status"]}')
+    #print(f'status type: {type(latestData["status"])} {latestData["status"]}')
+    assert latestData["status"]["RSOC"] == 88
 
     batt_module_capacity = int(
         latestData["battery_system"]["battery_system"]["system"][
