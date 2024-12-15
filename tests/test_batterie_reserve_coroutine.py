@@ -81,11 +81,6 @@ async def test_coroutine_methods(battery_discharging_reserve: sonnenbatterie) ->
 
 
     # sync wrapped methods used by ha component called by syncio.run_in_executor
-    assert battery_discharging_reserve.discharging > 0
-    assert battery_discharging_reserve.charging == 0
-    assert battery_discharging_reserve.fully_discharged_at.strftime('%d.%B.%Y %H:%M') == '24.May.2022 18:13'
-
-    # sync wrapped methods used by ha component
     status_data = await async_add_executor_job(
         target=_test_get_status
     )

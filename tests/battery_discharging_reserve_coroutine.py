@@ -8,7 +8,7 @@ import asyncio
 from collections.abc import (
     Callable,
 )
-from asyncmock import AsyncMock
+#from asyncmock import AsyncMock
 
 from sonnen_api_v2 import Batterie
 from sonnenbatterie import sonnenbatterie
@@ -28,13 +28,19 @@ async def fixture_battery_discharging_reserve(mocker) -> Batterie:
         logger.info('Sonnen mock data battery_discharging_reserve_asyncio test.')
 
     # Can't mock a coroutine!
-    mocker.patch.object(Batterie, "async_fetch_status", AsyncMock(return_value=__mock_status_discharging()))
-    mocker.patch.object(Batterie, "async_fetch_latest_details", AsyncMock(return_value=__mock_latest_discharging()))
-    mocker.patch.object(Batterie, "async_fetch_configurations", AsyncMock(return_value=__mock_configurations()))
+    mocker.patch.object(Batterie, "fetch_status", __mock_status_discharging)
+    mocker.patch.object(Batterie, "fetch_latest_details", __mock_latest_discharging)
     mocker.patch.object(Batterie, "fetch_configurations", __mock_configurations)
-    mocker.patch.object(Batterie, "async_fetch_battery_status", AsyncMock(return_value=__mock_battery_discharging()))
-    mocker.patch.object(Batterie, "async_fetch_powermeter", AsyncMock(return_value=__mock_powermeter()))
-    mocker.patch.object(Batterie, "async_fetch_inverter", AsyncMock(return_value=__mock_inverter_discharging()))
+    mocker.patch.object(Batterie, "fetch_battery_status", __mock_battery_discharging)
+    mocker.patch.object(Batterie, "fetch_powermeter", __mock_powermeter)
+    mocker.patch.object(Batterie, "fetch_inverter", __mock_inverter_discharging)
+    # mocker.patch.object(Batterie, "async_fetch_status", AsyncMock(return_value=__mock_status_discharging()))
+    # mocker.patch.object(Batterie, "async_fetch_latest_details", AsyncMock(return_value=__mock_latest_discharging()))
+    # mocker.patch.object(Batterie, "async_fetch_configurations", AsyncMock(return_value=__mock_configurations()))
+    # mocker.patch.object(Batterie, "fetch_configurations", __mock_configurations)
+    # mocker.patch.object(Batterie, "async_fetch_battery_status", AsyncMock(return_value=__mock_battery_discharging()))
+    # mocker.patch.object(Batterie, "async_fetch_powermeter", AsyncMock(return_value=__mock_powermeter()))
+    # mocker.patch.object(Batterie, "async_fetch_inverter", AsyncMock(return_value=__mock_inverter_discharging()))
 
     def async_add_executor_job[*_Ts, _T](
         target: Callable[[*_Ts], _T], *args: *_Ts

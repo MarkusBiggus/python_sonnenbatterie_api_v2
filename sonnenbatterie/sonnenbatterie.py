@@ -170,7 +170,7 @@ class sonnenbatterie:
             cache all mocked data when fixture is setup.
             Only intended to setup tests.
         """
-        return self.batterie.sync_get_update()
+        return self.batterie.sync_update()
 
     # more general purpose endpoints
     def set_configuration(self, name, value):
