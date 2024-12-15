@@ -59,6 +59,10 @@ async def test_coroutine_methods(battery_discharging_reserve: sonnenbatterie) ->
         """Coroutine to sync fetch"""
         return battery_discharging_reserve.get_status()
 
+    def _test_get_systemdata():
+        """Coroutine to sync fetch"""
+        return battery_discharging_reserve.get_systemdata()
+
     def _test_get_latest_data():
         """Coroutine to sync fetch"""
         return battery_discharging_reserve.get_latest_data()
@@ -70,6 +74,10 @@ async def test_coroutine_methods(battery_discharging_reserve: sonnenbatterie) ->
     def _test_get_battery():
         """Coroutine to sync fetch"""
         return battery_discharging_reserve.get_battery()
+
+    def _test_get_batterysystem():
+        """Coroutine to sync fetch"""
+        return battery_discharging_reserve.get_batterysystem()
 
     def _test_get_powermeter():
         """Coroutine to sync fetch"""
@@ -119,11 +127,27 @@ async def test_coroutine_methods(battery_discharging_reserve: sonnenbatterie) ->
     )
     assert battery_status.get('cyclecount') == 30
     assert battery_status.get('remainingcapacity') == 36.36
+    assert battery_status.get('nominalmoduledcvoltage') == 102.4
+    assert battery_status.get('usableremainingcapacity') == 22.22
 
     assert battery_status.get('total_installed_capacity') == 20000
-    assert battery_status.get('remaining_capacity') == 18200.576
-    assert battery_status.get('remaining_capacity_usable') == 16752
+    assert battery_status.get('remaining_capacity') == 3723.264
+    assert battery_status.get('remaining_capacity_usable') == 2275.328
     assert battery_status.get('backup_buffer_usable') == 2688
+
+    assert battery_status.get('current_state') == 'discharging'
+
+    system_data = await async_add_executor_job(
+        target=_test_get_systemdata
+    )
+    assert system_data.get('software_version') == '1.14.5'
+
+    battery_system = await async_add_executor_job(
+        target=_test_get_batterysystem
+    )
+    print(f'battery: {battery_system['battery_system']}')
+    assert battery_system['battery_system']['system']['depthofdischargelimit'] == 93
+    assert battery_system.get('modules') == 4
 
     inverter_data = await async_add_executor_job(
         target=_test_get_inverter
@@ -135,6 +159,7 @@ async def test_coroutine_methods(battery_discharging_reserve: sonnenbatterie) ->
     configurations = await async_add_executor_job(
         target=_test_get_configurations
     )
+    assert configurations.get('DE_Software') == system_data.get('software_version')
     assert configurations.get('DE_Software') == '1.14.5'
     assert configurations.get('EM_USOC') == 20
     assert configurations.get('DepthOfDischargeLimit') == 93
