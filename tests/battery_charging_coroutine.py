@@ -1,3 +1,7 @@
+"""Fixture to load batterie charging responses
+    using all sync methods called from async tests using asyncio.run_in_executor
+    to emulate ha component calls
+"""
 import logging
 import pytest
 import asyncio
@@ -10,13 +14,12 @@ from sonnenbatterie import sonnenbatterie
 
 from . mock_sonnenbatterie_v2_charging import __mock_status_charging, __mock_latest_charging, __mock_configurations, __mock_battery, __mock_powermeter, __mock_inverter
 
-
 LOGGER_NAME = "sonnenapiv2"
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-@pytest.fixture(name="battery_charging_ha")
-async def fixture_battery_charging_ha(mocker) -> sonnenbatterie:
+@pytest.fixture(name="battery_charging")
+async def fixture_battery_charging(mocker) -> Batterie:
     if LOGGER_NAME is not None:
         logging.basicConfig(filename=(f'/tests/logs/{LOGGER_NAME}.log'), level=logging.DEBUG)
         logger = logging.getLogger(LOGGER_NAME)
@@ -31,30 +34,29 @@ async def fixture_battery_charging_ha(mocker) -> sonnenbatterie:
     mocker.patch.object(Batterie, "fetch_inverter", __mock_inverter)
 
     def async_add_executor_job[*_Ts, _T](
-        self, target: Callable[[*_Ts], _T], *args: *_Ts
+        target: Callable[[*_Ts], _T], *args: *_Ts
         ) -> asyncio.Future[_T]:
         """Add an executor job from within the event loop."""
-        self.loop = asyncio.get_running_loop()
-        task = self.loop.run_in_executor(None, target, *args)
-    #    print (f'task type: {type(task)}')
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, target, *args)
         return task
 
     def _setup_batterie(_username, _token, _host):
         """Coroutine to sync instantiation"""
         return sonnenbatterie(_username, _token, _host)
 
-    def _sync_update():
-        """Coroutine to sync fetch"""
-        return battery_charging.batterie.sync_update()
-
-    battery_charging:sonnenbatterie = await async_add_executor_job(mocker,
+    battery_charging:sonnenbatterie = await async_add_executor_job(
         _setup_batterie, 'fakeUsername', 'fakeToken', 'fakeHost'
     )
-    assert isinstance(battery_charging.batterie, Batterie) is True
-#    print(f'type: {type(battery_charging.batterie)}  class: {Batterie.__class__} inst: {isinstance(battery_charging.batterie, Batterie)}')
-    # success = await async_add_executor_job(mocker,
-    #     target = _sync_update
-    # )
-    # assert success is True
+
+    def _sync_update(battery_charging: sonnenbatterie) -> bool:
+        """Coroutine to sync fetch"""
+        return battery_charging.get_update()
+
+    success = await async_add_executor_job(
+        _sync_update, battery_charging
+#        target = _sync_update, args = [battery_charging]
+    )
+    assert success is not False
 
     return battery_charging

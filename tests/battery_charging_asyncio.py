@@ -1,4 +1,3 @@
-import os
 import logging
 import pytest
 import asyncio
@@ -34,20 +33,27 @@ async def fixture_battery_charging(mocker) -> sonnenbatterie:
     mocker.patch.object(Batterie, "async_fetch_inverter", AsyncMock(return_value=__mock_inverter()))
 
     def async_add_executor_job[*_Ts, _T](
-        self, target: Callable[[*_Ts], _T], *args: *_Ts
+        target: Callable[[*_Ts], _T], *args: *_Ts
         ) -> asyncio.Future[_T]:
         """Add an executor job from within the event loop."""
-        self.loop = asyncio.get_running_loop()
-        task = self.loop.run_in_executor(None, target, *args)
-    #    print (f'task type: {type(task)}')
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, target, *args)
         return task
 
     def _setup_batterie(_username, _token, _host):
         """Coroutine to sync instantiation"""
         return sonnenbatterie(_username, _token, _host)
 
-    battery_charging:sonnenbatterie = await async_add_executor_job(mocker,
+    battery_charging:sonnenbatterie = await async_add_executor_job(
         _setup_batterie, 'fakeUsername', 'fakeToken', 'fakeHost'
     )
+    def _sync_update(battery_charging: sonnenbatterie) -> bool:
+        """Coroutine to sync fetch"""
+        return battery_charging.get_update()
+
+    success = await async_add_executor_job(
+        _sync_update, battery_charging
+    )
+    assert success is not False
 
     return battery_charging

@@ -83,7 +83,7 @@ class sonnenbatterie:
     def get_login_timeout(self) -> int:
         return self._batteryLoginTimeout
 
-    def set_request_connect_timeout(self, timeout:int = 60):
+    def set_request_connect_timeout(self, timeout:int = 60) -> tuple[int,int]:
         self._batteryRequestTimeout = (timeout, self._batteryRequestTimeout[TIMEOUT_REQUEST])
         return self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
 
@@ -164,21 +164,30 @@ class sonnenbatterie:
     def set_charge(self, rate):
         return self.set_manual_flowrate(SONNEN_CHARGE_PATH, rate)
 
+    # testing - used by fixtures to setup mocked data
+    def get_update(self) -> bool:
+        """Calls underlying Batterie update to read &
+            cache all mocked data when fixture is setup.
+            Only intended to setup tests.
+        """
+        return self.batterie.sync_get_update()
+
     # more general purpose endpoints
     def set_configuration(self, name, value):
         # All configurations names and values are handled as strings, so force that
         payload = {str(name): str(value)}
         return self._put(SONNEN_API_PATH_CONFIGURATIONS, payload)
 
-    def get_configurations(self):
+    def get_configurations(self) -> Dict:
         """Cache configurations - reused by many other methods
+            Verifies connection to device when class is instantiated
         """
     #    return self._get(SONNEN_API_PATH_CONFIGURATIONS)
         if self.configurations is None:
             self.configurations = self.batterie.get_configurations()
         return self.configurations
 
-    # async def async_get_configurations(self):
+    # async def async_get_configurations(self) -> Dict:
     #     """Cache configurations - reused by many other methods
     #     """
     # #    return self._get(SONNEN_API_PATH_CONFIGURATIONS)
@@ -195,7 +204,7 @@ class sonnenbatterie:
 
         return self.configurations.get(name)
 
-    def get_status(self):
+    def get_status(self) -> Dict:
     #    return self._get(SONNEN_API_PATH_STATUS)
         status_data = self.batterie.sync_get_status()
         return status_data
@@ -207,7 +216,7 @@ class sonnenbatterie:
     #     )
     #     return status_data
 
-    def get_powermeter(self):
+    def get_powermeter(self) -> Dict:
     #    return self._get(SONNEN_API_PATH_POWER_METER)
         return self.batterie.sync_get_powermeter()
 
@@ -217,7 +226,7 @@ class sonnenbatterie:
     #         self.batterie.sync_get_powermeter
     #     )
 
-    def get_inverter(self):
+    def get_inverter(self) -> Dict:
     #    return self._get(SONNEN_API_PATH_INVERTER)
         return self.batterie.sync_get_inverter()
 
@@ -227,7 +236,7 @@ class sonnenbatterie:
     #         self.batterie.sync_get_inverter
     #     )
 
-    def get_systemdata(self):
+    def get_systemdata(self) -> Dict:
         '''system_data not in V2 - fake it for required component attributes'''
     #    return self._get(SONNEN_API_PATH_SYSTEM_DATA)
         self.get_configurations()
@@ -239,7 +248,7 @@ class sonnenbatterie:
     #     await self.async_get_configurations()
     #     return self._systemdata()
 
-    def _systemdata(self):
+    def _systemdata(self) -> Dict:
         '''system_data not in V2 - fake it for required component attributes'''
         systemdata = {'software_version': self.configurations.get("DE_Software"),
                       'ERP_ArticleName': self._battery_model,
@@ -247,19 +256,19 @@ class sonnenbatterie:
                     }
         return systemdata
 
-    def get_batterysystem(self)-> Union[str, bool]:
+    def get_batterysystem(self) -> Dict:
         """battery_system not in V2 - fake it for required component attributes"""
         configurations = self.batterie.sync_get_configurations()
         return self._aug_batterysystem_data(configurations)
 
-    # async def async_get_batterysystem(self)-> Union[str, bool]:
+    # async def async_get_batterysystem(self)-> Dict:
     #     """battery_system not in V2 - fake it for required component attributes"""
     #     configurations = await self.async_add_executor_job(
     #         self.batterie.sync_get_configurations
     #     )
     #     return self._aug_batterysystem_data(configurations)
 
-    def _aug_batterysystem_data(self, configurations_data: Dict)-> Union[str, bool]:
+    def _aug_batterysystem_data(self, configurations_data: Dict) -> Dict:
         """Augment battery_system data for V1 compatibility"""
     #    print(f'type: {type(configurations_data)}  configs: {configurations_data}')
         systemdata = {'modules':
@@ -275,7 +284,7 @@ class sonnenbatterie:
                     }
         return systemdata
 
-    def get_battery(self):
+    def get_battery(self) -> Dict:
         """Battery status for sonnenbatterie wrapper
             Fake V1 API data used by ha sonnenbatterie component
             Returns:
@@ -301,7 +310,7 @@ class sonnenbatterie:
     #     await self.async_get_status() #cache in self.batterie
     #     return self._battery_status(battery_status)
 
-    def _battery_status(self, battery_status):
+    def _battery_status(self, battery_status) -> Dict:
         measurements = {'battery_status': {'cyclecount': self.batterie.battery_cycle_count,
                                         'stateofhealth': int(battery_status.get('systemstatus'))
                                         }
@@ -326,7 +335,7 @@ class sonnenbatterie:
 
         return battery_status
 
-    def get_latest_data(self):
+    def get_latest_data(self) -> Dict:
     #    return self._get(SONNEN_API_PATH_LATEST_DATA)
         return self.batterie.sync_get_latest_data()
 
@@ -337,15 +346,15 @@ class sonnenbatterie:
     #     )
 
     # these have special handling in some form, for example converting a mode as a number into a string
-    async def get_current_charge_level(self):
+    async def get_current_charge_level(self) -> int:
     #    return self.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
         latest_data = await self.async_get_latest_data()
         return latest_data.get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
 
-    def get_operating_mode(self):
+    def get_operating_mode(self) -> int:
         return self.batterie.configuration_em_operatingmode #get_configuration(SONNEN_CONFIGURATION_OPERATING_MODE)
 
-    def get_operating_mode_name(self):
+    def get_operating_mode_name(self) -> str:
     #    operating_mode_num = self.get_operating_mode()
         return self.batterie.configuration_em_operatingmode_name  #SONNEN_OPERATING_MODES_TO_OPERATING_MODE_NAMES.get(operating_mode_num)
 
@@ -355,7 +364,7 @@ class sonnenbatterie:
     # def set_operating_mode_by_name(self, operating_mode_name):
     #     return self.set_operating_mode(SONNEN_OPERATING_MODE_NAMES_TO_OPERATING_MODES.get(operating_mode_name))
 
-    def get_battery_reserve(self):
+    def get_battery_reserve(self) -> int:
         return self.batterie.configuration_em_usoc #get_configuration(SONNEN_CONFIGURATION_BACKUP_RESERVE)
 
     # def set_battery_reserve(self, reserve=5):
@@ -381,14 +390,14 @@ class sonnenbatterie:
     #         target_level = 100
     #     return self.set_battery_reserve(target_level)
 
-    def get_time_of_use_schedule_as_string(self):
+    def get_time_of_use_schedule_as_string(self) -> str:
         """Config param is a <List>
             Return:
                 JSON string of the List
         """
         return json.dumps(self.get_configuration(SONNEN_CONFIGURATION_TOU_SCHEDULE))
 
-    def get_time_of_use_schedule_as_json_objects(self):
+    def get_time_of_use_schedule_as_json_objects(self) -> Dict:
         return json.loads(self.get_time_of_use_schedule_as_string())
 
     def get_time_of_use_schedule_as_schedule(self)-> timeofuseschedule:
