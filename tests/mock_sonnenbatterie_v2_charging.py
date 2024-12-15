@@ -153,7 +153,9 @@ def __mock_configurations(*args)-> json:
         "CM_MarketingModuleCapacity": 5000,
         "EM_USER_INPUT_TIME_THREE": 0,
         "CN_CascadingRole": "none",
-        "EM_US_GEN_POWER_SET_POINT": 0
+        "EM_US_GEN_POWER_SET_POINT": 0,
+        "DepthOfDischargeLimit": 93
+
     }
 
 def __mock_battery(*args)-> json:

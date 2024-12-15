@@ -270,7 +270,7 @@ class sonnenbatterie:
 
     def _aug_batterysystem_data(self, configurations_data: Dict) -> Dict:
         """Augment battery_system data for V1 compatibility"""
-        print(f'type: {type(configurations_data)}  configs: {configurations_data}')
+#        print(f'type: {type(configurations_data)}  configs: {configurations_data}')
 #        print(f'DoD:{configurations_data['DepthOfDischargeLimit']}')
         systemdata = {'modules':
                         configurations_data.get('IC_BatteryModules'),
