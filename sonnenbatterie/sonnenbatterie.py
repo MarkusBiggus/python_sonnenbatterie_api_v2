@@ -353,3 +353,4 @@ class sonnenbatterie:
     # In this case the schedule is a array representation of an array of dictionary formatted time of use entries, each entry has a start time and stop time and a threshold_p_max (max grid power for the entire building including charging)
     # async def set_time_of_use_schedule_from_json_objects(self, schedule):
     #     return self.set_configuration(SONNEN_CONFIGURATION_TOU_SCHEDULE, json.dumps(schedule))
+    
