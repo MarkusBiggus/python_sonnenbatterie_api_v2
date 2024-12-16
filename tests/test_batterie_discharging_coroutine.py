@@ -13,12 +13,9 @@ from collections.abc import (
     Callable,
 )
 
-#from freezegun import freeze_time
-from sonnen_api_v2 import Batterie
+from sonnenbatterie import sonnenbatterie
 
-from .battery_charging_coroutine import fixture_battery_charging
 from .battery_discharging_coroutine import fixture_battery_discharging
-from .battery_discharging_reserve_coroutine import fixture_battery_discharging_reserve
 
 LOGGER_NAME = None # "sonnenapiv2" #
 
@@ -40,13 +37,13 @@ if LOGGER_NAME is not None:
     ch.setLevel(logging.DEBUG)
     logger.addHandler(fh)
     logger.addHandler(ch)
-    logger.info ('Coroutine mock data tests')
+    logger.info ('Coroutine discharging mock data tests')
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("battery_charging", "battery_discharging", "battery_discharging_reserve")
-async def test_coroutine_methods(battery_charging: Batterie, battery_discharging: Batterie, battery_discharging_reserve: Batterie) -> None:
-    """Batterie coroutines using mock data"""
+@pytest.mark.usefixtures("battery_discharging")
+async def test_coroutine_methods(battery_discharging: sonnenbatterie) -> None:
+    """Batterie discharging coroutines using mock data"""
 
     def async_add_executor_job[*_Ts, _T](
         target: Callable[[*_Ts], _T], *args: *_Ts
@@ -58,67 +55,100 @@ async def test_coroutine_methods(battery_charging: Batterie, battery_discharging
 
     def _test_get_status():
         """Coroutine to sync fetch"""
-        return battery_charging.sync_get_status()
+        return battery_discharging.get_status()
+
+    def _test_get_systemdata():
+        """Coroutine to sync fetch"""
+        return battery_discharging.get_systemdata()
 
     def _test_get_latest_data():
         """Coroutine to sync fetch"""
-        return battery_charging.sync_get_latest_data()
+        return battery_discharging.get_latest_data()
 
     def _test_get_configurations():
         """Coroutine to sync fetch"""
-        return battery_charging.sync_get_configurations()
+        return battery_discharging.get_configurations()
 
     def _test_get_battery():
         """Coroutine to sync fetch"""
-        return battery_charging.sync_get_battery()
+        return battery_discharging.get_battery()
+
+    def _test_get_batterysystem():
+        """Coroutine to sync fetch"""
+        return battery_discharging.get_batterysystem()
 
     def _test_get_powermeter():
         """Coroutine to sync fetch"""
-        return battery_charging.sync_get_powermeter()
+        return battery_discharging.get_powermeter()
 
     def _test_get_inverter():
         """Coroutine to sync fetch"""
-        return battery_charging.sync_get_inverter()
+        return battery_discharging.get_inverter()
 
 
     # sync wrapped methods used by ha component called by syncio.run_in_executor
-
     status_data = await async_add_executor_job(
         target=_test_get_status
     )
     #print(f'status: {status_data}')
-    assert status_data.get('Timestamp') == '2022-04-30 17:00:55'
-    assert status_data.get('GridFeedIn_W') == 0
-    assert status_data.get('Consumption_W') == 1578
-    assert status_data.get('Production_W') == 2972
-    assert status_data.get('Pac_total_W') == -1394
-
     latest_data = await async_add_executor_job(
         target=_test_get_latest_data
     )
-    assert latest_data.get('Timestamp') == '2022-04-30 17:00:55'
+    assert status_data.get('Timestamp') == latest_data.get('Timestamp')
+    assert status_data.get('GridFeedIn_W') == latest_data.get('GridFeedIn_W')
+    assert status_data.get('Consumption_W') == latest_data.get('Consumption_W')
+    assert status_data.get('Production_W') == latest_data.get('Production_W')
+    assert status_data.get('Pac_total_W') == latest_data.get('Pac_total_W')
+
+    assert status_data.get('Timestamp') == '2023-11-20 17:00:58'
+    assert status_data.get('GridFeedIn_W') == 0
+    assert status_data.get('Consumption_W') == 1541
+    assert status_data.get('Production_W') == 103
+    assert status_data.get('Pac_total_W') == 1438
+
+    assert latest_data.get('Timestamp') == '2023-11-20 17:00:58'
     assert latest_data.get('GridFeedIn_W') == 0
-    assert latest_data.get('Consumption_W') == 1578
-    assert latest_data.get('Production_W') == 2972
-    assert latest_data.get('Pac_total_W') == -1394
+    assert latest_data.get('Consumption_W') == 1541
+    assert latest_data.get('Production_W') == 103
+    assert latest_data.get('Pac_total_W') == 1438
+
+    system_data = await async_add_executor_job(
+        target=_test_get_systemdata
+    )
+    assert system_data.get('software_version') == '1.14.5'
+
+    battery_system = await async_add_executor_job(
+        target=_test_get_batterysystem
+    )
+    assert battery_system['battery_system']['system']['depthofdischargelimit'] == 93
+    assert battery_system.get('modules') == 4
 
     configurations = await async_add_executor_job(
         target=_test_get_configurations
     )
+    assert configurations.get('DE_Software') == system_data.get('software_version')
     assert configurations.get('DE_Software') == '1.14.5'
     assert configurations.get('EM_USOC') == 20
     assert configurations.get('DepthOfDischargeLimit') == 93
 
-    battery_info = await async_add_executor_job(
+    battery_status = await async_add_executor_job(
         target=_test_get_battery
     )
-    assert battery_info.get('cyclecount') == 30
-    assert battery_info.get('remainingcapacity') == 177.74
+    assert battery_status.get('cyclecount') == 30
+    assert battery_status.get('remainingcapacity') == 177.74
+    assert battery_status.get('nominalmoduledcvoltage') == 102.4
+    assert battery_status.get('usableremainingcapacity') == 163.6
 
-    assert battery_info.get('total_installed_capacity') == 20000
-    assert battery_info.get('remaining_capacity') == 18200.576
-    assert battery_info.get('remaining_capacity_usable') == 16752
-    assert battery_info.get('backup_buffer_usable') == 2688
+    assert battery_status.get('total_installed_capacity') == 20000
+    assert battery_status.get('remaining_capacity') == 18200.576
+    assert battery_status.get('remaining_capacity_usable') == 16752.64
+    assert battery_status.get('backup_buffer_usable') == 2688
+
+    assert battery_status.get('current_state') == 'discharging'
+
+    powermeter = await async_add_executor_job(
+        target=_test_get_powermeter
+    )
 
     powermeter = await async_add_executor_job(
         target=_test_get_powermeter
@@ -131,24 +161,18 @@ async def test_coroutine_methods(battery_charging: Batterie, battery_discharging
     inverter_data = await async_add_executor_job(
         target=_test_get_inverter
     )
-    assert inverter_data.get('pac_total') == -1394.33
+    assert int(inverter_data.get('pac_total')) == status_data.get('Pac_total_W')
+    assert inverter_data.get('pac_total') == 1438.67
     assert inverter_data.get('uac') == 233.55
 
-    # every other emulated get method
-    request_connect_timeouts = battery_charging.get_request_connect_timeouts()
-    #print(f'connect_timeouts: {request_connect_timeouts}')
-    assert request_connect_timeouts == (20,20)
-    request_connect_timeouts = battery_charging.set_request_connect_timeouts((15,25))
-    assert request_connect_timeouts == (15,25)
+    # every other emulated get methods
+    assert battery_discharging.get_login_timeout() == 120
+    assert battery_discharging.set_login_timeout(25) == 25
+    assert battery_discharging.get_request_connect_timeout() == 60
+    assert battery_discharging.set_request_connect_timeout(25) == 25
+    assert battery_discharging.get_request_read_timeout() == 60
+    assert battery_discharging.set_request_read_timeout(15) == 15
 
-    operating_mode =  battery_charging.configuration_em_operatingmode
-    operating_mode_name =  battery_charging.configuration_em_operatingmode_name
-    battery_reserve =  battery_charging.configuration_em_usoc
-    #print(f'operating_mode: {operating_mode}  name: {operating_mode_name}  battery_reserve:{battery_reserve}%')
-    assert battery_reserve == 20
-    assert operating_mode == 2
-    assert operating_mode_name == 'Automatic - Self Consumption'
-
-    from .check_results import check_results
-
-    check_results(battery_charging, battery_discharging, battery_discharging_reserve)
+    assert battery_discharging.get_current_charge_level() == 88
+    assert battery_discharging.get_operating_mode() == 2
+    assert battery_discharging.get_operating_mode_name() == 'Automatic - Self Consumption'

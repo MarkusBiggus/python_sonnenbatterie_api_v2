@@ -15,7 +15,7 @@ from .const import *
 from .timeofuse import timeofuseschedule
 from sonnen_api_v2 import Batterie, BatterieError
 
-# indexes for _batteryRequestTimeout
+# indexes for _batteryRequestTimeouts
 TIMEOUT_CONNECT=0
 TIMEOUT_REQUEST=1
 
@@ -35,8 +35,8 @@ class sonnenbatterie:
         self._batteryLoginTimeout = DEFAULT_BATTERY_LOGIN_TIMEOUT
 #        self._batteryConnectTimeout = DEFAULT_CONNECT_TO_BATTERY_TIMEOUT
 #        self._batteryReadTimeout = DEFAULT_READ_FROM_BATTERY_TIMEOUT
-#        self._batteryRequestTimeout = (self._batteryConnectTimeout, self._batteryReadTimeout)
-        self._batteryRequestTimeout = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
+#        self._batteryRequestTimeouts = (self._batteryConnectTimeout, self._batteryReadTimeout)
+        self._batteryRequestTimeouts = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
         self.configurations = None
         self.batterie = Batterie(self.token, self.ipaddress)
         # Expect to be in a running loop from ha
@@ -46,14 +46,15 @@ class sonnenbatterie:
         try:
             self.configurations = self.batterie.sync_get_configurations() # cache configurations in Batterie
         except BatterieError as error:
-            LOGGER.error(f'Unable to connect to sonnenbatterie! {error}')
-            raise BatterieError(f'Unable to connect to sonnenbatterie! {error}')
+            LOGGER.error(f'Error connecting to sonnenbatterie! {error}')
+            raise BatterieError(f'Error connecting to sonnenbatterie! {error}')
 
         if self.configurations is None:
-            LOGGER.error('Unable to connect to sonnenbatterie!')
-            raise BatterieError('Unable to connect to sonnenbatterie!')
+            LOGGER.error('Unable to fetch config from sonnenbatterie!')
+            raise BatterieError('Unable to fetch config from sonnenbatterie!')
 
-        self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
+        self.batterie.set_request_connect_timeouts(self._batteryRequestTimeouts)
+        self.set_login_timeout()
         self._battery_serial_number = 'unknown' #os.getenv("BATTERIE_SN", "unknown")
         self._battery_model = 'unknown' #os.getenv("BATTERIE_MODEL", "unknown")
 #        self._login()
@@ -79,29 +80,30 @@ class sonnenbatterie:
     def set_login_timeout(self, timeout:int = 120):
         # not used by wrapper
         self._batteryLoginTimeout = timeout
+        return self._batteryLoginTimeout
 
     def get_login_timeout(self) -> int:
         return self._batteryLoginTimeout
 
-    def set_request_connect_timeout(self, timeout:int = 60) -> tuple[int,int]:
-        self._batteryRequestTimeout = (timeout, self._batteryRequestTimeout[TIMEOUT_REQUEST])
-        return self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
+    def set_request_connect_timeout(self, timeout:int = DEFAULT_CONNECT_TO_BATTERY_TIMEOUT) -> tuple[int,int]:
+        self._batteryRequestTimeouts = self.batterie.set_request_connect_timeouts ((timeout, self._batteryRequestTimeouts[TIMEOUT_REQUEST]))
+        return self._batteryRequestTimeouts[TIMEOUT_CONNECT]
 
     def get_request_connect_timeout(self) -> int:
-        return self._batteryRequestTimeout[TIMEOUT_CONNECT]
+        return self._batteryRequestTimeouts[TIMEOUT_CONNECT]
 
-    def set_request_read_timeout(self, timeout:int = 60):
-        self._batteryRequestTimeout = (self._batteryRequestTimeout[TIMEOUT_CONNECT], timeout)
-        return self.batterie.set_request_connect_timeouts(self._batteryRequestTimeout)
+    def set_request_read_timeout(self, timeout:int = DEFAULT_READ_FROM_BATTERY_TIMEOUT):
+        self._batteryRequestTimeouts = self.batterie.set_request_connect_timeouts ((self._batteryRequestTimeouts[TIMEOUT_CONNECT], timeout))
+        return self._batteryRequestTimeouts[TIMEOUT_REQUEST]
 
     def get_request_read_timeout(self) -> int:
-        return self._batteryRequestTimeout[TIMEOUT_REQUEST]
+        return self._batteryRequestTimeouts[TIMEOUT_REQUEST]
 
     # def _get(self,what,isretry=False):
     #     # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
     #     url = self.baseurl+what
     #     response=requests.get(url,
-    #         headers={'Auth-Token': self.token}, timeout=self._batteryRequestTimeout
+    #         headers={'Auth-Token': self.token}, timeout=self._batteryRequestTimeouts
     #     )
     #     if not isretry and response.status_code == 401:
     #         self._login()
@@ -115,7 +117,7 @@ class sonnenbatterie:
     #     # This is a synchronous call, you may need to wrap it in a thread or something for asynchronous operation
     #     url = self.baseurl+what
     #     response=requests.put(url,
-    #         headers={'Auth-Token': self.token,'Content-Type': 'application/json'} , json=payload, timeout=self._batteryRequestTimeout
+    #         headers={'Auth-Token': self.token,'Content-Type': 'application/json'} , json=payload, timeout=self._batteryRequestTimeouts
     #     )
     #     if not isretry and response.status_code == 401:
     #         self._login()
@@ -129,7 +131,7 @@ class sonnenbatterie:
     #     url = self.baseurl+what
     #     print("Posting "+url)
     #     response=requests.post(url,
-    #         headers={'Auth-Token': self.token,'Content-Type': 'application/json'}, timeout=self._batteryRequestTimeout
+    #         headers={'Auth-Token': self.token,'Content-Type': 'application/json'}, timeout=self._batteryRequestTimeouts
     #     )
     #     if not isretry and response.status_code == 401:
     #         self._login()
@@ -159,7 +161,6 @@ class sonnenbatterie:
 
     def set_discharge(self, rate):
         return self.set_manual_flowrate(SONNEN_DISCHARGE_PATH, rate)
-
 
     def set_charge(self, rate):
         return self.set_manual_flowrate(SONNEN_CHARGE_PATH, rate)
@@ -209,44 +210,19 @@ class sonnenbatterie:
         status_data = self.batterie.sync_get_status()
         return status_data
 
-    # async def async_get_status(self):
-    # #    return self._get(SONNEN_API_PATH_STATUS)
-    #     status_data = await self.async_add_executor_job(
-    #         self.batterie.sync_get_status
-    #     )
-    #     return status_data
-
     def get_powermeter(self) -> Dict:
     #    return self._get(SONNEN_API_PATH_POWER_METER)
         return self.batterie.sync_get_powermeter()
 
-    # async def async_get_powermeter(self):
-    # #    return self._get(SONNEN_API_PATH_POWER_METER)
-    #     return await self.async_add_executor_job(
-    #         self.batterie.sync_get_powermeter
-    #     )
-
     def get_inverter(self) -> Dict:
     #    return self._get(SONNEN_API_PATH_INVERTER)
         return self.batterie.sync_get_inverter()
-
-    # async def async_get_inverter(self):
-    # #    return self._get(SONNEN_API_PATH_INVERTER)
-    #     return await self.async_add_executor_job(
-    #         self.batterie.sync_get_inverter
-    #     )
 
     def get_systemdata(self) -> Dict:
         '''system_data not in V2 - fake it for required component attributes'''
     #    return self._get(SONNEN_API_PATH_SYSTEM_DATA)
         self.get_configurations()
         return self._systemdata()
-
-    # async def async_get_systemdata(self):
-    #     '''system_data not in V2 - fake it for required component attributes'''
-    # #    return self._get(SONNEN_API_PATH_SYSTEM_DATA)
-    #     await self.async_get_configurations()
-    #     return self._systemdata()
 
     def _systemdata(self) -> Dict:
         '''system_data not in V2 - fake it for required component attributes'''
@@ -261,17 +237,8 @@ class sonnenbatterie:
         configurations = self.batterie.sync_get_configurations()
         return self._aug_batterysystem_data(configurations)
 
-    # async def async_get_batterysystem(self)-> Dict:
-    #     """battery_system not in V2 - fake it for required component attributes"""
-    #     configurations = await self.async_add_executor_job(
-    #         self.batterie.sync_get_configurations
-    #     )
-    #     return self._aug_batterysystem_data(configurations)
-
     def _aug_batterysystem_data(self, configurations_data: Dict) -> Dict:
         """Augment battery_system data for V1 compatibility"""
-#        print(f'type: {type(configurations_data)}  configs: {configurations_data}')
-#        print(f'DoD:{configurations_data['DepthOfDischargeLimit']}')
         systemdata = {'modules':
                         configurations_data.get('IC_BatteryModules'),
                         'battery_system':
@@ -291,25 +258,10 @@ class sonnenbatterie:
             Returns:
                 json response
         """
-    #    return self._get(SONNEN_API_PATH_BATTERY)
         battery_status = self.batterie.sync_get_battery()
         self.get_configurations()
         self.get_status() #cache in self.batterie
         return self._battery_status(battery_status)
-
-    # async def async_get_battery(self):
-    #     """Battery status for sonnenbatterie wrapper
-    #         Fake V1 API data used by ha sonnenbatterie component
-    #         Returns:
-    #             json response
-    #     """
-    # #    return self._get(SONNEN_API_PATH_BATTERY)
-    #     battery_status = await self.async_add_executor_job(
-    #         self.batterie.sync_get_battery
-    #     )
-    #     await self.async_get_configurations()
-    #     await self.async_get_status() #cache in self.batterie
-    #     return self._battery_status(battery_status)
 
     def _battery_status(self, battery_status) -> Dict:
         measurements = {'battery_status': {'cyclecount': self.batterie.battery_cycle_count,
@@ -340,17 +292,10 @@ class sonnenbatterie:
     #    return self._get(SONNEN_API_PATH_LATEST_DATA)
         return self.batterie.sync_get_latest_data()
 
-    # async def async_get_latest_data(self):
-    # #    return self._get(SONNEN_API_PATH_LATEST_DATA)
-    #     return await self.async_add_executor_job(
-    #         self.batterie.sync_get_latest_data
-    #     )
-
     # these have special handling in some form, for example converting a mode as a number into a string
-    async def get_current_charge_level(self) -> int:
+    def get_current_charge_level(self) -> int:
     #    return self.get_latest_data().get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
-        latest_data = await self.async_get_latest_data()
-        return latest_data.get(SONNEN_LATEST_DATA_CHARGE_LEVEL)
+        return self.batterie.u_soc
 
     def get_operating_mode(self) -> int:
         return self.batterie.configuration_em_operatingmode #get_configuration(SONNEN_CONFIGURATION_OPERATING_MODE)
