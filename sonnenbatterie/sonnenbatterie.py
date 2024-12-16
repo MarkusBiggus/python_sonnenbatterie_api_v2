@@ -22,7 +22,7 @@ TIMEOUT_REQUEST=1
 #load_dotenv()
 
 class sonnenbatterie:
-    def __init__(self, username, token, ipaddress) -> None:
+    def __init__(self, username, token, ipaddress, ipport='80') -> None:
         """Expect to be in a running asyncio loop called by asyncio.loop.run_in_executor
             Condition of HA custom_component.coordinator _async_update_data()
             that instantiates this class
@@ -30,7 +30,8 @@ class sonnenbatterie:
 #        self.username=username
         self.token=token
         self.ipaddress=ipaddress
-        self.baseurl='http://'+self.ipaddress+'/api/'
+        self.ipport=ipport
+        self.baseurl = f'http://{self.ipaddress}:{self.ipport}/api/'
         self.setpoint='v2/setpoint/'
         self._batteryLoginTimeout = DEFAULT_BATTERY_LOGIN_TIMEOUT
 #        self._batteryConnectTimeout = DEFAULT_CONNECT_TO_BATTERY_TIMEOUT
@@ -38,7 +39,7 @@ class sonnenbatterie:
 #        self._batteryRequestTimeouts = (self._batteryConnectTimeout, self._batteryReadTimeout)
         self._batteryRequestTimeouts = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
         self.configurations = None
-        self.batterie = Batterie(self.token, self.ipaddress)
+        self.batterie = Batterie(self.token, self.ipaddress, self.ipport)
         # Expect to be in a running loop from ha
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -274,11 +275,14 @@ class sonnenbatterie:
             battery_status['current_state'] = "unavailable"
             return battery_status
 
-        """ current_state index of: ["standby", "charging", "discharging", "charged", "discharged"] """
+        """ current_state index of: ["standby", "charging", "discharging", "discharging reserve", "charged", "discharged"] """
         if self.batterie.status_battery_charging:
             battery_status['current_state'] = "charging"
         elif self.batterie.status_battery_discharging:
-            battery_status['current_state'] = "discharging"
+            if self.batterie.battery_remaining_capacity_wh > self.batterie.backup_buffer_capacity_wh:
+                battery_status['current_state'] = "discharging"
+            else:
+                battery_status['current_state'] = "discharging reserve"
         elif self.batterie.battery_rsoc > 98:
             battery_status['current_state'] = "charged"
         elif self.batterie.battery_usable_remaining_capacity < 2:
