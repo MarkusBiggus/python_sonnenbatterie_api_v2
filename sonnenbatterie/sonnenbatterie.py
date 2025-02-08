@@ -13,7 +13,7 @@ from typing import (
 import json
 from .const import *
 from .timeofuse import timeofuseschedule
-from sonnen_api_v2 import Batterie, BatterieError
+from sonnen_api_v2 import Batterie, BatterieError, BatterieAuthError, BatterieHTTPError
 
 # indexes for _batteryRequestTimeouts
 TIMEOUT_CONNECT=0
@@ -53,11 +53,13 @@ class sonnenbatterie:
         except BatterieAuthError as error:
             LOGGER.error(f'Error authenticating to sonnenbatterie! {error}')
     #        raise BatterieAuthError(f'Error authenticating to sonnenbatterie! {error}')
+        except BatterieHTTPError as error:
+            LOGGER.error(f'Error from sonnenbatterie API! {error}')
         except BatterieError as error:
             LOGGER.error(f'Error connecting to sonnenbatterie! {error}')
     #        raise BatterieError(f'Error connecting to sonnenbatterie! {error}')
 
-        if success is not True
+        if success is not True:
             LOGGER.error('Unable to fetch config from sonnenbatterie!')
             raise BatterieError('Unable to fetch config from sonnenbatterie!')
 
@@ -65,7 +67,7 @@ class sonnenbatterie:
 #        self._login()
 
 #    def _login(self):
-        """not required for V2 API"""
+#        """not required for V2 API"""
 #        password_sha512 = hashlib.sha512(self.password.encode('utf-8')).hexdigest()
 #        req_challenge=requests.get(self.baseurl+'challenge', timeout=self._batteryLoginTimeout)
 #        req_challenge.raise_for_status()
