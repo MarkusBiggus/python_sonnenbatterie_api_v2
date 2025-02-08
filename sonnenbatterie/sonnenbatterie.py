@@ -38,29 +38,33 @@ class sonnenbatterie:
 #        self._batteryReadTimeout = DEFAULT_READ_FROM_BATTERY_TIMEOUT
 #        self._batteryRequestTimeouts = (self._batteryConnectTimeout, self._batteryReadTimeout)
         self._batteryRequestTimeouts = (DEFAULT_CONNECT_TO_BATTERY_TIMEOUT, DEFAULT_READ_FROM_BATTERY_TIMEOUT)
+        self.set_login_timeout()
+        self._battery_serial_number = 'unknown' #os.getenv("BATTERIE_SN", "unknown")
+        self._battery_model = 'unknown' #os.getenv("BATTERIE_MODEL", "unknown")
         self.configurations = None
+
         self.batterie = Batterie(self.token, self.ipaddress, self.ipport)
-        # Expect to be in a running loop from ha
+        # Expect to be in a running event loop from ha
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         try:
-            self.configurations = self.batterie.sync_get_configurations() # cache configurations in Batterie
+            success = self.batterie.sync_validate_token() #sync_get_configurations() # cache configurations in Batterie
+        except BatterieAuthError as error:
+            LOGGER.error(f'Error authenticating to sonnenbatterie! {error}')
+    #        raise BatterieAuthError(f'Error authenticating to sonnenbatterie! {error}')
         except BatterieError as error:
             LOGGER.error(f'Error connecting to sonnenbatterie! {error}')
-            raise BatterieError(f'Error connecting to sonnenbatterie! {error}')
+    #        raise BatterieError(f'Error connecting to sonnenbatterie! {error}')
 
-        if self.configurations is None:
+        if success is not True
             LOGGER.error('Unable to fetch config from sonnenbatterie!')
             raise BatterieError('Unable to fetch config from sonnenbatterie!')
 
         self.batterie.set_request_connect_timeouts(self._batteryRequestTimeouts)
-        self.set_login_timeout()
-        self._battery_serial_number = 'unknown' #os.getenv("BATTERIE_SN", "unknown")
-        self._battery_model = 'unknown' #os.getenv("BATTERIE_MODEL", "unknown")
 #        self._login()
 
-    def _login(self):
+#    def _login(self):
         """not required for V2 API"""
 #        password_sha512 = hashlib.sha512(self.password.encode('utf-8')).hexdigest()
 #        req_challenge=requests.get(self.baseurl+'challenge', timeout=self._batteryLoginTimeout)

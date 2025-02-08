@@ -1,5 +1,4 @@
 pytest
 pytest-cov
-setuptools==65.5.1
-asyncio>=3.4.3
-sonnen_api_v2>=0.5.12
+setuptools==75.1.0
+sonnen_api_v2>=0.5.13
