@@ -3,6 +3,7 @@
 """
 import logging
 import pytest
+from freezegun import freeze_time
 
 from sonnen_api_v2 import Batterie
 
@@ -14,6 +15,7 @@ LOGGER_NAME = "sonnenapiv2"
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 @pytest.fixture(name="battery_discharging_reserve")
+@freeze_time("20-11-2023 17:00:59") # disharging reserve time
 def fixture_battery_discharging_reserve(mocker) -> Batterie:
     if LOGGER_NAME is not None:
         logging.basicConfig(filename=(f'/tests/logs/{LOGGER_NAME}.log'), level=logging.DEBUG)
@@ -27,7 +29,7 @@ def fixture_battery_discharging_reserve(mocker) -> Batterie:
     mocker.patch.object(Batterie, "fetch_powermeter", __mock_powermeter)
     mocker.patch.object(Batterie, "fetch_inverter", __mock_inverter_discharging)
 
-    battery_discharging_reserve = Batterie('fakeUsername', 'fakeToken', 'fakeHost')
+    battery_discharging_reserve = Batterie('fakeToken', 'fakeHost')
     success = battery_discharging_reserve.sync_update()
     assert success is not False
 

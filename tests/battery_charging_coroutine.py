@@ -4,13 +4,14 @@
 """
 import logging
 import pytest
+from freezegun import freeze_time
 import asyncio
 from collections.abc import (
     Callable,
 )
 
 from sonnen_api_v2 import Batterie
-from sonnenbatterie import sonnenbatterie
+#from sonnen_api_v2.sonnen import Sonnen as Batterie, BatterieError
 
 from . mock_sonnenbatterie_v2_charging import __mock_status_charging, __mock_latest_charging, __mock_configurations, __mock_battery, __mock_powermeter, __mock_inverter
 
@@ -19,6 +20,7 @@ LOGGER_NAME = "sonnenapiv2"
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 @pytest.fixture(name="battery_charging")
+@freeze_time("20-11-2023 17:00:00") # charging time
 async def fixture_battery_charging(mocker) -> Batterie:
     if LOGGER_NAME is not None:
         logging.basicConfig(filename=(f'/tests/logs/{LOGGER_NAME}.log'), level=logging.DEBUG)
@@ -39,19 +41,14 @@ async def fixture_battery_charging(mocker) -> Batterie:
         """Add an executor job from within the event loop."""
         loop = asyncio.get_running_loop()
         task = loop.run_in_executor(None, target, *args)
+    #    print (f'task type: {type(task)}')
         return task
 
-    def _setup_batterie(_username, _token, _host):
-        """Coroutine to sync instantiation"""
-        return sonnenbatterie(_username, _token, _host)
-
-    battery_charging:sonnenbatterie = await async_add_executor_job(
-        _setup_batterie, 'fakeUsername', 'fakeToken', 'fakeHost'
-    )
-
-    def _sync_update(battery_charging: sonnenbatterie) -> bool:
+    def _sync_update(battery_charging: Batterie) -> bool:
         """Coroutine to sync fetch"""
-        return battery_charging.get_update()
+        return battery_charging.sync_get_update()
+
+    battery_charging = Batterie('fakeToken', 'fakeHost')
 
     success = await async_add_executor_job(
         _sync_update, battery_charging

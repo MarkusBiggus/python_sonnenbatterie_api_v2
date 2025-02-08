@@ -1,3 +1,3 @@
-setuptools==65.5.1
+setuptools==75.7.0
 load_dotenv>=0.1.0
-sonnen_api_v2>=0.5.12
+sonnen_api_v2>=0.5.13
